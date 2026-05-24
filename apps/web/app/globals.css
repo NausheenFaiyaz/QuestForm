@@ -1,0 +1,102 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+:root {
+  --pixel-navy: #091a3f;
+  --pixel-blue: #27a2f3;
+  --pixel-soft: #edf4ff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body), monospace;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.font-pixel {
+  font-family: var(--font-pixel), monospace;
+  letter-spacing: 0.04em;
+}
+
+.pixel-landing {
+  background-image: url("./assets/LandingPage_Grass.webp"), url("./assets/LandingPage_Hills.webp"),
+    url("./assets/LandingPage_Mountain.webp"), url("./assets/LandingPage_Sky.webp");
+  background-color: #d5edff;
+  background-position:
+    bottom center,
+    bottom center,
+    top center,
+    top left;
+  background-size:
+    auto clamp(680px, 92vh, 860px),
+    auto clamp(640px, 88vh, 820px),
+    auto clamp(560px, 76vh, 700px),
+    auto clamp(560px, 76vh, 700px);
+  background-repeat: repeat-x;
+  image-rendering: pixelated;
+  animation: pixel-sky-drift 34s linear infinite;
+}
+
+@keyframes pixel-sky-drift {
+  from {
+    background-position:
+      bottom center,
+      bottom center,
+      top center,
+      top left;
+  }
+
+  to {
+    background-position:
+      bottom center,
+      bottom center,
+      top center,
+      left -960px top;
+  }
+}
+
+.pixel-card {
+  border: 2px solid #b8c5d8;
+  background: #f5f8ff;
+  box-shadow: 0 6px 0 #cad5e6;
+}
+
+.pixel-speech {
+  position: relative;
+  border: 2px solid #bcc8da;
+  border-radius: 10px;
+  background: #ecf2fb;
+}
+
+.pixel-speech::before {
+  content: "";
+  position: absolute;
+  left: -14px;
+  top: 20px;
+  width: 0;
+  height: 0;
+  border-top: 10px solid transparent;
+  border-bottom: 10px solid transparent;
+  border-right: 14px solid #bcc8da;
+}
+
+.pixel-speech::after {
+  content: "";
+  position: absolute;
+  left: -11px;
+  top: 21px;
+  width: 0;
+  height: 0;
+  border-top: 9px solid transparent;
+  border-bottom: 9px solid transparent;
+  border-right: 12px solid #ecf2fb;
+}
