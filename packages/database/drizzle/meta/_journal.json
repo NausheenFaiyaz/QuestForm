@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1779254161850,
+      "tag": "0000_supreme_typhoid_mary",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1779291799956,
+      "tag": "0001_tidy_maggott",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779563683610,
+      "tag": "0002_spicy_trish_tilby",
+      "breakpoints": true
+    }
+  ]
+}
