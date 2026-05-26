@@ -44,6 +44,7 @@ export const formsTable = pgTable(
     allowAnonymousResponses: boolean("allow_anonymous_responses").notNull().default(true),
     responseLimit: integer("response_limit"),
     expiresAt: timestamp("expires_at"),
+    expiryNotificationSentAt: timestamp("expiry_notification_sent_at"),
     publishedAt: timestamp("published_at"),
     archivedAt: timestamp("archived_at"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -106,6 +107,7 @@ export const formResponsesTable = pgTable(
   (table) => ({
     formSubmittedAtIdx: index("form_responses_form_submitted_at_idx").on(table.formId, table.submittedAt),
     formIdIdx: index("form_responses_form_id_idx").on(table.formId),
+    formIpHashUniqueIdx: uniqueIndex("form_responses_form_ip_hash_unique").on(table.formId, table.ipHash),
   }),
 );
 
