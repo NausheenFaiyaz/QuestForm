@@ -2,7 +2,9 @@ import { defineConfig } from "tsup";
 
 export default defineConfig({
   entry: ["./src/index.ts"],
-  noExternal: ["@teachyst"], // transpile packages starting with `@teachyst` and their dependencies
+  // Bundle internal monorepo packages into the API artifact for deployment environments
+  // where workspace links are not available at runtime.
+  noExternal: [/^@repo\//],
   splitting: false,
   bundle: true,
   outDir: "./dist",
