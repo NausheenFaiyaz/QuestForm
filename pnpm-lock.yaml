@@ -27,6 +27,9 @@ importers:
       '@repo/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@repo/services':
+        specifier: workspace:*
+        version: link:../../packages/services
       '@repo/trpc':
         specifier: workspace:*
         version: link:../../packages/trpc
