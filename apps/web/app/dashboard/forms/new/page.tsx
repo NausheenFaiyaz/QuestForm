@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { AppSidebar } from "~/components/site/app-sidebar";
 import { FormEditor } from "~/components/site/form-editor";
 import { useCreateForm } from "~/hooks/api/forms";
 
@@ -9,34 +10,39 @@ export default function NewFormPage() {
   const createForm = useCreateForm();
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-10">
-      <h1 className="mb-5 font-pixel text-5xl text-[#081a42]">Create Form</h1>
-      <FormEditor
-        initialValue={{
-          title: "Untitled Form",
-          slug: `form-${Date.now()}`,
-          themeKey: "startup-clean",
-          visibility: "public",
-          description: "",
-          fields: [
-            {
-              label: "Your answer",
-              fieldType: "short_text",
-              fieldKey: "your_answer",
-              isRequired: true,
-              order: 0,
-              config: {},
-            },
-          ],
-        }}
-        submitLabel="Create form"
-        isSubmitting={createForm.isPending}
-        onSubmit={async (data) => {
-          const created = await createForm.mutateAsync(data);
-          router.push(`/dashboard/forms/${created.id}`);
-        }}
-      />
-      {createForm.error ? <p className="mt-4 text-red-700">{createForm.error.message}</p> : null}
+    <main className="comic-dashboard-shell min-h-screen bg-[#fff8ee]">
+      <div className="mx-auto flex min-h-screen max-w-[1760px] flex-col xl:h-screen xl:flex-row">
+        <AppSidebar />
+        <section className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-5 sm:px-6 lg:px-8 xl:h-screen">
+          <FormEditor
+            initialValue={{
+              title: "Untitled Form",
+              slug: "",
+              themeKey: "startup-clean",
+              visibility: "public",
+              description: "",
+              expiresAt: "",
+              fields: [
+                {
+                  label: "Your answer",
+                  fieldType: "short_text",
+                  fieldKey: "your_answer",
+                  isRequired: true,
+                  order: 0,
+                  config: {},
+                },
+              ],
+            }}
+            submitLabel="Create Form"
+            isSubmitting={createForm.isPending}
+            onSubmit={async (data) => {
+              const created = await createForm.mutateAsync(data);
+              router.push(`/dashboard/forms/${created.id}`);
+            }}
+          />
+          {createForm.error ? <p className="mt-4 text-lg font-semibold text-[#b42318]">{createForm.error.message}</p> : null}
+        </section>
+      </div>
     </main>
   );
 }
