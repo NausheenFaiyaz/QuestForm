@@ -15,6 +15,13 @@ const defaultCookieOption: CookieOptions = {
   maxAge: ONE_YEAR,
 };
 
+const clearCookieOption: CookieOptions = {
+  path: defaultCookieOption.path,
+  httpOnly: defaultCookieOption.httpOnly,
+  secure: defaultCookieOption.secure,
+  sameSite: defaultCookieOption.sameSite,
+};
+
 export function createCookieFactory(res: Response) {
   return function createCookie(
     name: string,
@@ -33,7 +40,7 @@ export function getCookieFactory(req: Request) {
 
 export function clearCookieFactory(res: Response) {
   return function clearCookie(name: string) {
-    res.clearCookie(name);
+    res.clearCookie(name, clearCookieOption);
   };
 }
 
