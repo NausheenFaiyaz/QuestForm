@@ -1,4 +1,4 @@
-import { jsonb, pgTable, uuid, varchar, timestamp, boolean, text } from "drizzle-orm/pg-core";
+import { jsonb, pgTable, uuid, varchar, timestamp, boolean, text, index } from "drizzle-orm/pg-core";
 
 export const usersTable = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -24,3 +24,30 @@ export const usersTable = pgTable("users", {
 
 export type SelectUser = typeof usersTable.$inferSelect;
 export type InsertUser = typeof usersTable.$inferInsert;
+
+export const userRefreshSessionsTable = pgTable(
+  "user_refresh_sessions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => usersTable.id, { onDelete: "cascade" }),
+    tokenHash: varchar("token_hash", { length: 128 }).notNull().unique(),
+    expiresAt: timestamp("expires_at").notNull(),
+    revokedAt: timestamp("revoked_at"),
+    ipHash: varchar("ip_hash", { length: 128 }),
+    userAgent: varchar("user_agent", { length: 500 }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at")
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => ({
+    userIdIdx: index("user_refresh_sessions_user_id_idx").on(table.userId),
+    expiresAtIdx: index("user_refresh_sessions_expires_at_idx").on(table.expiresAt),
+  }),
+);
+
+export type SelectUserRefreshSession = typeof userRefreshSessionsTable.$inferSelect;
+export type InsertUserRefreshSession = typeof userRefreshSessionsTable.$inferInsert;

@@ -107,7 +107,6 @@ export const formResponsesTable = pgTable(
   (table) => ({
     formSubmittedAtIdx: index("form_responses_form_submitted_at_idx").on(table.formId, table.submittedAt),
     formIdIdx: index("form_responses_form_id_idx").on(table.formId),
-    formIpHashUniqueIdx: uniqueIndex("form_responses_form_ip_hash_unique").on(table.formId, table.ipHash),
   }),
 );
 
