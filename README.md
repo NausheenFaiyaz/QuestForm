@@ -1,135 +1,217 @@
-# Turborepo starter
+# QuestForm
 
-This Turborepo starter is maintained by the Turborepo core team.
+QuestForm is a Typeform-style SaaS for creating, publishing, and analyzing forms with a comic-themed UI.
 
-## Using this example
+- Live app: `https://quest-form-web.vercel.app/`
+- Frontend hosting: Vercel
+- Backend hosting: Render
+- Database: Neon (PostgreSQL)
 
-Run the following command:
+## Tech Stack
 
-```sh
-npx create-turbo@latest
+- Monorepo: Turborepo + pnpm workspaces
+- Frontend: Next.js 16, React 19, Tailwind CSS 4, TanStack Query, tRPC client
+- Backend: Express 5, tRPC server, OpenAPI via `trpc-to-openapi`, Scalar docs
+- Database: PostgreSQL with Drizzle ORM + Drizzle Kit
+- Auth: Email/password + Google sign-in, JWT access token + refresh sessions
+- Email: Resend API (optional but supported in production)
+
+## Features
+
+- User authentication
+  - Sign up/sign in with email + password
+  - Google sign-in
+  - Session cookies with refresh-token rotation
+- Form builder
+  - Create/update/publish/unpublish/archive/clone/delete forms
+  - Multiple field types: short/long text, email, number, single select, multi select, checkbox, rating, date
+  - Welcome and end screens in flow metadata
+- Public form experience
+  - Shareable form by slug
+  - Submit responses with validation
+  - Optional respondent email capture
+- Analytics and responses
+  - Owner dashboard analytics
+  - Per-form analytics and paginated response listing
+  - CSV export of form responses from the responses dashboard
+  - Form view tracking + completion metrics
+- Email notifications
+  - Creator form-created email
+  - Respondent submission confirmation email
+
+## Monorepo Structure
+
+```text
+apps/
+  web/                      Next.js frontend
+  api/                      Express API server (tRPC + OpenAPI + docs)
+packages/
+  database/                 Drizzle schema, models, migrations
+  services/                 Domain services (user, form, email)
+  trpc/                     Shared tRPC server/client package
+  logger/                   Shared logger
+  eslint-config/            Shared lint config
+  typescript-config/        Shared TS config
 ```
 
-## What's inside?
+## App Routes (Frontend)
 
-This Turborepo includes the following packages/apps:
+- `/` home
+- `/signin`
+- `/signup`
+- `/pricing`
+- `/explore`
+- `/dashboard`
+- `/dashboard/forms/new`
+- `/dashboard/forms/:formId`
+- `/dashboard/forms/:formId/responses`
+- `/profile`
+- `/forms/:slug` public form page
+- `/forms/:slug/thank-you`
 
-### Apps and Packages
+## API and Docs
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+Base server endpoints:
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+- `GET /` basic server message
+- `GET /health` basic health message
+- `GET /openapi.json` generated OpenAPI schema
+- `GET /docs` Scalar API docs
+- `/trpc/*` tRPC endpoint
+- `/api/*` OpenAPI routes generated from tRPC metadata
 
-### Utilities
+OpenAPI procedure groups:
 
-This Turborepo has some additional tools already setup for you:
+- Authentication
+  - `/api/authentication/createUserWithEmailAndPassword`
+  - `/api/authentication/signInWithEmailAndPassword`
+  - `/api/authentication/signInWithGoogle`
+  - `/api/authentication/signOut`
+  - `/api/authentication/me`
+  - `/api/authentication/updateMe`
+- Forms
+  - `/api/forms/create`
+  - `/api/forms/update`
+  - `/api/forms/publish`
+  - `/api/forms/unpublish`
+  - `/api/forms/delete`
+  - `/api/forms/archive`
+  - `/api/forms/clone`
+  - `/api/forms/mine`
+  - `/api/forms/ownerAnalytics`
+  - `/api/forms/detail`
+  - `/api/forms/analytics`
+  - `/api/forms/responses`
+  - `/api/forms/explore`
+  - `/api/forms/publicBySlug`
+  - `/api/forms/submit`
+- Health
+  - `/api/health/status`
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+## Response CSV Export
 
-### Build
+From `/dashboard/forms/:formId/responses`, you can export submissions as CSV using the `Export CSV` button.
 
-To build all apps and packages, run the following command:
+- Exports all matching responses (not just the currently visible page)
+- Includes respondent email, submitted timestamp, and dynamic columns for question labels
+- File name format: `<form-slug>-responses.csv`
 
-```
-cd my-turborepo
+## Environment Variables
 
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
+This repo uses `dotenv --` in scripts, so root `.env` is used across apps/packages.
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
-```
+Required/shared:
 
-You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+- `DATABASE_URL` (Neon/Postgres connection string)
+- `JWT_SECRET`
+- `JWT_EXPIRES_IN` (default in code: `15m`)
+- `ACCESS_TOKEN_EXPIRES_IN` (default: `15m`)
+- `REFRESH_TOKEN_EXPIRES_IN` (default: `30d`)
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET` (needed by your auth flow setup)
+- `NEXT_PUBLIC_GOOGLE_CLIENT_ID`
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
+API app (`apps/api`) runtime:
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
+- `PORT` (default `8000`)
+- `BASE_URL` (default `http://localhost:8000`)
+- `CORS_ORIGIN` (default `http://localhost:3000`)
 
-### Develop
+Frontend (`apps/web`) runtime:
 
-To develop all apps and packages, run the following command:
+- `NEXT_PUBLIC_API_URL` (example: `http://localhost:8000/trpc` or `https://questform.onrender.com/trpc`)
 
-```
-cd my-turborepo
+Email (optional but recommended in production):
 
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
+- `RESEND_API_KEY`
+- `EMAIL_FROM` (example: `QuestForm <noreply@yourdomain.com>`)
+- `EMAIL_REPLY_TO` (example: `support@yourdomain.com`)
+- `APP_WEB_URL` (example: `https://quest-form-web.vercel.app`)
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
-```
+## Local Setup
 
-You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+1. Install dependencies
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
+```bash
+pnpm install
 ```
 
-## Useful Links
+2. Configure `.env` in repository root.
 
-Learn more about the power of Turborepo:
+3. Start Postgres (optional local DB)
 
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
+```bash
+docker compose up -d
+```
+
+4. Generate and apply DB migrations
+
+```bash
+pnpm db:generate
+pnpm db:migrate
+```
+
+5. Start all apps
+
+```bash
+pnpm dev
+```
+
+Default local URLs:
+
+- Web: `http://localhost:3000`
+- API: `http://localhost:8000`
+- API docs: `http://localhost:8000/docs`
+
+## Scripts
+
+At repo root:
+
+- `pnpm dev` run all dev servers via Turbo
+- `pnpm build` build all packages/apps
+- `pnpm lint` lint workspace
+- `pnpm check-types` typecheck workspace
+- `pnpm db:generate` generate Drizzle migration files
+- `pnpm db:migrate` apply Drizzle migrations
+- `pnpm format` format TS/TSX/MD files
+
+## Demo Credentials
+
+No hardcoded demo account is shipped in this repository.
+
+Use this section after creating one from `/signup`:
+
+- Demo URL: `https://quest-form-web.vercel.app/signin`
+- Demo email: `<add-your-demo-email>`
+- Demo password: `<add-your-demo-password>`
+
+## Deployment Notes
+
+- Frontend (Vercel) should have `NEXT_PUBLIC_API_URL` pointing to your Render backend tRPC endpoint.
+  - Example: `https://questform.onrender.com/trpc`
+- Backend (Render) should allow CORS for your Vercel domain via `CORS_ORIGIN`.
+- Neon is used as the production PostgreSQL database (`DATABASE_URL`).
+
+## License
+
+Private project.
