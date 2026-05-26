@@ -10,7 +10,12 @@ import {
   updateMeInputModel,
 } from "./model";
 import { userService } from "../../services";
-import { clearAuthenticationCookie, setAuthenticationCookie } from "../../utils/cookie";
+import {
+  clearAuthenticationCookies,
+  getRefreshTokenCookie,
+  setAccessTokenCookie,
+  setRefreshTokenCookie,
+} from "../../utils/cookie";
 import { TRPCError } from "@trpc/server";
 
 const TAGS = ["Authentication"];
@@ -29,13 +34,16 @@ export const authRouter = router({
     .output(createUserWithEmailAndPasswordOutputModel)
     .mutation(async ({ input, ctx }) => {
       const { fullName, email, password } = input;
-      const { id, token } = await userService.createUserWithEmailAndPassword({
+      const { id } = await userService.createUserWithEmailAndPassword({
         fullName,
         email,
         password,
       });
-
-      setAuthenticationCookie(ctx, token);
+      const { accessToken, refreshToken } = await userService.createSessionForUser(id, {
+        userAgent: ctx.req.headers["user-agent"] ?? null,
+      });
+      setAccessTokenCookie(ctx, accessToken);
+      setRefreshTokenCookie(ctx, refreshToken);
 
       return {
         id,
@@ -52,8 +60,12 @@ export const authRouter = router({
     .input(signInWithEmailAndPasswordInputModel)
     .output(createUserWithEmailAndPasswordOutputModel)
     .mutation(async ({ input, ctx }) => {
-      const { id, token } = await userService.signInUserWithEmailAndPassword(input);
-      setAuthenticationCookie(ctx, token);
+      const { id } = await userService.signInUserWithEmailAndPassword(input);
+      const { accessToken, refreshToken } = await userService.createSessionForUser(id, {
+        userAgent: ctx.req.headers["user-agent"] ?? null,
+      });
+      setAccessTokenCookie(ctx, accessToken);
+      setRefreshTokenCookie(ctx, refreshToken);
       return { id };
     }),
   signInWithGoogle: publicProcedure
@@ -67,8 +79,12 @@ export const authRouter = router({
     .input(signInWithGoogleInputModel)
     .output(createUserWithEmailAndPasswordOutputModel)
     .mutation(async ({ input, ctx }) => {
-      const { id, token } = await userService.signInWithGoogle(input);
-      setAuthenticationCookie(ctx, token);
+      const { id } = await userService.signInWithGoogle(input);
+      const { accessToken, refreshToken } = await userService.createSessionForUser(id, {
+        userAgent: ctx.req.headers["user-agent"] ?? null,
+      });
+      setAccessTokenCookie(ctx, accessToken);
+      setRefreshTokenCookie(ctx, refreshToken);
       return { id };
     }),
   signOut: protectedProcedure
@@ -81,7 +97,9 @@ export const authRouter = router({
     })
     .output(signOutOutputModel)
     .mutation(async ({ ctx }) => {
-      clearAuthenticationCookie(ctx);
+      const refreshToken = getRefreshTokenCookie(ctx);
+      if (refreshToken) await userService.revokeRefreshSession(refreshToken);
+      clearAuthenticationCookies(ctx);
       return { ok: true };
     }),
   me: protectedProcedure

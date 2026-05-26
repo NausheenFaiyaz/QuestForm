@@ -1,18 +1,13 @@
 import type { CookieOptions, Response, Request } from "express";
 import { TRPCContext } from "../context";
 
-const ONE_MINUTE = 60 * 1000;
-const ONE_HOUR = 60 * ONE_MINUTE;
-const ONE_DAY = 24 * ONE_HOUR;
-const ONE_MONTH = 30 * ONE_DAY;
-const ONE_YEAR = 12 * ONE_MONTH;
+const isProductionEnv = ["production", "prod"].includes(process.env.NODE_ENV ?? "");
 
 const defaultCookieOption: CookieOptions = {
   path: "/",
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "lax",
-  maxAge: ONE_YEAR,
+  secure: isProductionEnv,
+  sameSite: isProductionEnv ? "none" : "lax",
 };
 
 const clearCookieOption: CookieOptions = {
@@ -44,20 +39,69 @@ export function clearCookieFactory(res: Response) {
   };
 }
 
-const AUTHENTICATION_COOKIE_NAME = "authentication-token";
+const ACCESS_TOKEN_COOKIE_NAME = "access-token";
+const REFRESH_TOKEN_COOKIE_NAME = "refresh-token";
 
-export function setAuthenticationCookie(ctx: TRPCContext, accessToken: string) {
-  ctx.createCookie(AUTHENTICATION_COOKIE_NAME, accessToken);
+function parseDurationToMs(duration: string) {
+  const match = /^(\d+)(ms|s|m|h|d)$/i.exec(duration.trim());
+  if (!match || !match[1] || !match[2]) throw new Error(`invalid duration format: ${duration}`);
+
+  const value = Number(match[1]);
+  const unit = match[2].toLowerCase();
+
+  if (unit === "ms") return value;
+  if (unit === "s") return value * 1000;
+  if (unit === "m") return value * 60 * 1000;
+  if (unit === "h") return value * 60 * 60 * 1000;
+  return value * 24 * 60 * 60 * 1000;
 }
 
-export function getAuthenticationCookie(ctx: TRPCContext) {
-  return ctx.getCookie(AUTHENTICATION_COOKIE_NAME);
+function getCookieMaxAgeFromEnv(value: string, fallback: string) {
+  try {
+    return parseDurationToMs(value || fallback);
+  } catch {
+    return parseDurationToMs(fallback);
+  }
 }
 
-export function getAuthenticationCookieFromGetter(getCookie: (name: string) => string | undefined) {
-  return getCookie(AUTHENTICATION_COOKIE_NAME);
+export function setAccessTokenCookie(ctx: TRPCContext, accessToken: string) {
+  const maxAge = getCookieMaxAgeFromEnv(
+    process.env.ACCESS_TOKEN_EXPIRES_IN || process.env.JWT_EXPIRES_IN || "",
+    "15m",
+  );
+  ctx.createCookie(ACCESS_TOKEN_COOKIE_NAME, accessToken, { ...defaultCookieOption, maxAge });
 }
 
-export function clearAuthenticationCookie(ctx: TRPCContext) {
-  ctx.clearCookie(AUTHENTICATION_COOKIE_NAME);
+export function setRefreshTokenCookie(ctx: TRPCContext, refreshToken: string) {
+  const maxAge = getCookieMaxAgeFromEnv(process.env.REFRESH_TOKEN_EXPIRES_IN || "", "30d");
+  ctx.createCookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, { ...defaultCookieOption, maxAge });
+}
+
+export function getAccessTokenCookie(ctx: TRPCContext) {
+  return ctx.getCookie(ACCESS_TOKEN_COOKIE_NAME);
+}
+
+export function getRefreshTokenCookie(ctx: TRPCContext) {
+  return ctx.getCookie(REFRESH_TOKEN_COOKIE_NAME);
+}
+
+export function getAccessTokenCookieFromGetter(getCookie: (name: string) => string | undefined) {
+  return getCookie(ACCESS_TOKEN_COOKIE_NAME);
+}
+
+export function getRefreshTokenCookieFromGetter(getCookie: (name: string) => string | undefined) {
+  return getCookie(REFRESH_TOKEN_COOKIE_NAME);
+}
+
+export function clearAccessTokenCookie(ctx: TRPCContext) {
+  ctx.clearCookie(ACCESS_TOKEN_COOKIE_NAME);
+}
+
+export function clearRefreshTokenCookie(ctx: TRPCContext) {
+  ctx.clearCookie(REFRESH_TOKEN_COOKIE_NAME);
+}
+
+export function clearAuthenticationCookies(ctx: TRPCContext) {
+  clearAccessTokenCookie(ctx);
+  clearRefreshTokenCookie(ctx);
 }

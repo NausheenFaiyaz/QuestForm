@@ -1,9 +1,13 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import {
+  clearAuthenticationCookies,
   createCookieFactory,
+  getAccessTokenCookieFromGetter,
   getCookieFactory,
+  getRefreshTokenCookieFromGetter,
   clearCookieFactory,
-  getAuthenticationCookieFromGetter,
+  setAccessTokenCookie,
+  setRefreshTokenCookie,
 } from "./utils/cookie";
 import UserService from "@repo/services/user";
 
@@ -22,8 +26,50 @@ export async function createContext({
   res,
 }: CreateExpressContextOptions): Promise<TRPCContext> {
   const getCookie = getCookieFactory(req);
-  const token = getAuthenticationCookieFromGetter(getCookie);
-  const authUser = token ? await userService.verifyUserToken(token) : null;
+  const accessToken = getAccessTokenCookieFromGetter(getCookie);
+  const refreshToken = getRefreshTokenCookieFromGetter(getCookie);
+  let authUser = accessToken ? await userService.verifyUserToken(accessToken) : null;
+
+  if (!authUser && refreshToken) {
+    const rotated = await userService.rotateRefreshSession(refreshToken, {
+      userAgent: req.headers["user-agent"] ?? null,
+    });
+
+    if (rotated) {
+      setAccessTokenCookie(
+        {
+          req,
+          res,
+          createCookie: createCookieFactory(res),
+          getCookie,
+          clearCookie: clearCookieFactory(res),
+          authUser: null,
+        },
+        rotated.accessToken,
+      );
+      setRefreshTokenCookie(
+        {
+          req,
+          res,
+          createCookie: createCookieFactory(res),
+          getCookie,
+          clearCookie: clearCookieFactory(res),
+          authUser: null,
+        },
+        rotated.refreshToken,
+      );
+      authUser = { id: rotated.userId };
+    } else {
+      clearAuthenticationCookies({
+        req,
+        res,
+        createCookie: createCookieFactory(res),
+        getCookie,
+        clearCookie: clearCookieFactory(res),
+        authUser: null,
+      });
+    }
+  }
 
   const ctx: TRPCContext = {
     req,
