@@ -182,12 +182,12 @@ export default function ExplorePage() {
     });
   }, [activeCategory, deferredQuery, preparedForms, sortBy]);
 
-  const handleCopySlug = async (slug: string) => {
+  const handleCopyUrl = async (slug: string) => {
     try {
-      await navigator.clipboard.writeText(slug);
-      toast.success("Slug copied");
+      await navigator.clipboard.writeText(`${window.location.origin}/forms/${slug}`);
+      toast.success("URL copied");
     } catch {
-      toast.error("Could not copy slug");
+      toast.error("Could not copy URL");
     }
   };
 
@@ -199,7 +199,7 @@ export default function ExplorePage() {
         <section className="relative flex-1 overflow-y-auto overflow-x-hidden bg-[#fff8ee] px-4 py-5 sm:px-6 lg:px-8 xl:h-screen">
           <Image src={backgroundSvg} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
           <div className="relative">
-            <header className="overflow-hidden rounded-[2rem] border-[3px] border-black bg-[#fffdf7] shadow-[6px_6px_0_#000]">
+            <header className="overflow-hidden rounded-[2rem] border-[3px] border-black bg-[#c85ef6] shadow-[6px_6px_0_#000]">
               <div className="relative flex flex-col gap-6 px-5 py-6 lg:flex-row lg:items-start lg:justify-between lg:px-8">
                 <div className="pointer-events-none absolute inset-0">
                   <Image src={cloud} alt="" className="absolute bottom-0 right-0 hidden w-80 lg:block" />
@@ -211,7 +211,7 @@ export default function ExplorePage() {
                     <h1 className="font-pixel text-[clamp(2rem,3vw,2rem)] uppercase leading-[0.95] text-[#16110d]">
                       Explore Public Forms
                     </h1>
-                    <p className="mt-3 text-lg font-semibold text-[#5f4f3a]">
+                    <p className="mt-3 text-lg font-semibold text-[#ffffff]">
                       Discover powerful forms created by the community.
                     </p>
                   </div>
@@ -361,11 +361,11 @@ export default function ExplorePage() {
                       <div className="mt-4 flex items-center justify-between gap-3">
                         <button
                           type="button"
-                          onClick={() => handleCopySlug(form.slug)}
+                          onClick={() => handleCopyUrl(form.slug)}
                           className="inline-flex items-center gap-2 rounded-full border border-black bg-[#fff7dc] px-3 py-1 text-xs font-black uppercase tracking-[0.12em] text-[#5f4f3a] shadow-[2px_2px_0_#000]"
                         >
                           <Globe className="h-3.5 w-3.5" />
-                          Copy slug
+                          Copy URL
                         </button>
                         <Link
                           href={`/forms/${form.slug}`}
