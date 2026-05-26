@@ -1,0 +1,1 @@
+ALTER TABLE "forms" ADD COLUMN "expiry_notification_sent_at" timestamp;
