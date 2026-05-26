@@ -21,7 +21,7 @@ export const fieldConfigModel = z.object({
   maxValue: z.number().optional(),
   options: z.array(z.string().min(1).max(100)).max(100).optional(),
   ratingScale: z.number().int().min(3).max(10).optional(),
-});
+}).passthrough();
 
 export const formFieldInputModel = z.object({
   label: z.string().min(1).max(160),
@@ -45,7 +45,8 @@ export const createFormInputModel = z.object({
     .string()
     .min(3)
     .max(160)
-    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+    .optional(),
   themeKey: z.string().min(3).max(80).default("startup-clean"),
   visibility: formVisibilityModel.default("public"),
   isTemplate: z.boolean().default(false),
@@ -122,10 +123,41 @@ export const dailyResponsePointOutputModel = z.object({
   count: z.number().int().nonnegative(),
 });
 
+export const formStatusCountOutputModel = z.object({
+  status: formStatusModel,
+  count: z.number().int().nonnegative(),
+});
+
+export const topFormAnalyticsOutputModel = z.object({
+  formId: z.string().uuid(),
+  title: z.string(),
+  slug: z.string(),
+  status: formStatusModel,
+  responseCount: z.number().int().nonnegative(),
+  viewCount: z.number().int().nonnegative(),
+  completionRate: z.number().min(0),
+});
+
 export const analyticsOutputModel = z.object({
   formId: z.string().uuid(),
   totalResponses: z.number().int().nonnegative(),
+  totalViews: z.number().int().nonnegative(),
+  completionRate: z.number().min(0),
   dailyResponses: z.array(dailyResponsePointOutputModel),
+  dailyViews: z.array(dailyResponsePointOutputModel),
+});
+
+export const ownerDashboardAnalyticsOutputModel = z.object({
+  totalForms: z.number().int().nonnegative(),
+  publishedForms: z.number().int().nonnegative(),
+  unpublishedForms: z.number().int().nonnegative(),
+  totalResponses: z.number().int().nonnegative(),
+  totalViews: z.number().int().nonnegative(),
+  overallCompletionRate: z.number().min(0),
+  dailyResponses: z.array(dailyResponsePointOutputModel),
+  dailyViews: z.array(dailyResponsePointOutputModel),
+  formsByStatus: z.array(formStatusCountOutputModel),
+  topForms: z.array(topFormAnalyticsOutputModel),
 });
 
 export const submitOutputModel = z.object({

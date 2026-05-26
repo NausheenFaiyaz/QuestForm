@@ -9,6 +9,7 @@ import {
   formFieldsTable,
   formResponseItemsTable,
   formResponsesTable,
+  formViewsTable,
   formsTable,
   gte,
   ilike,
@@ -20,6 +21,10 @@ import {
   sql,
 } from "@repo/database";
 import type { SelectFormField } from "@repo/database/models/form";
+import { usersTable } from "@repo/database/models/user";
+import { logger } from "@repo/logger";
+import { env } from "../env";
+import EmailService from "../email";
 import { ServiceError } from "../errors";
 import {
   archiveFormInputModel,
@@ -37,13 +42,92 @@ const WINDOW_MS = 5 * 60 * 1000;
 const MAX_REQUESTS_PER_WINDOW = 30;
 
 export class FormService {
+  private emailService = new EmailService();
+
   private hashSubject(raw: string) {
     return createHash("sha256").update(raw).digest("hex");
+  }
+
+  private getWebUrl() {
+    return env.APP_WEB_URL ?? "http://localhost:3000";
+  }
+
+  private async sendCreatorFormCreatedEmail(ownerId: string, form: { title: string; slug: string; expiresAt?: Date | null }) {
+    const [owner] = await db
+      .select({ email: usersTable.email, fullName: usersTable.fullName })
+      .from(usersTable)
+      .where(eq(usersTable.id, ownerId))
+      .limit(1);
+
+    if (!owner?.email) return;
+
+    const formUrl = `${this.getWebUrl()}/dashboard`;
+    const expiresLine = form.expiresAt ? `Expiry: ${new Date(form.expiresAt).toLocaleString()}` : "Expiry: not set";
+
+    await this.emailService.sendEmail({
+      to: owner.email,
+      subject: `Your form "${form.title}" is ready`,
+      text: `Hi ${owner.fullName}, your form "${form.title}" has been created.\nManage it here: ${formUrl}\nPublic link: ${this.getWebUrl()}/forms/${form.slug}\n${expiresLine}`,
+      html: `<p>Hi ${owner.fullName},</p><p>Your form <strong>${form.title}</strong> has been created.</p><p><a href="${formUrl}">Open dashboard</a><br /><a href="${this.getWebUrl()}/forms/${form.slug}">Open public form</a></p><p>${expiresLine}</p>`,
+    });
+  }
+
+  private async sendRespondentConfirmationEmail(email: string, form: { title: string; slug: string }) {
+    await this.emailService.sendEmail({
+      to: email,
+      subject: `Response received for "${form.title}"`,
+      text: `Thanks for responding to "${form.title}". Your response has been recorded.\nForm link: ${this.getWebUrl()}/forms/${form.slug}`,
+      html: `<p>Thanks for responding to <strong>${form.title}</strong>.</p><p>Your response has been recorded successfully.</p><p><a href="${this.getWebUrl()}/forms/${form.slug}">View form</a></p>`,
+    });
+  }
+
+  private async sendCreatorFormExpiredEmail(form: { id: string; ownerId: string; title: string; slug: string; expiresAt: Date | null }) {
+    const [owner] = await db
+      .select({ email: usersTable.email, fullName: usersTable.fullName })
+      .from(usersTable)
+      .where(eq(usersTable.id, form.ownerId))
+      .limit(1);
+
+    if (!owner?.email) return;
+
+    await this.emailService.sendEmail({
+      to: owner.email,
+      subject: `Your form "${form.title}" has expired`,
+      text: `Hi ${owner.fullName}, your form "${form.title}" has expired and is no longer accepting new responses.\nManage it here: ${this.getWebUrl()}/dashboard/forms/${form.id}`,
+      html: `<p>Hi ${owner.fullName},</p><p>Your form <strong>${form.title}</strong> has expired and is no longer accepting new responses.</p><p><a href="${this.getWebUrl()}/dashboard/forms/${form.id}">Open form settings</a></p>`,
+    });
+  }
+
+  private makeSlugBase(title: string) {
+    return title
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 120);
+  }
+
+  private async generateUniqueSlug(title: string) {
+    const base = this.makeSlugBase(title) || "form";
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      const suffix = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+      const candidate = `${base}-${suffix}`.slice(0, 160);
+      const [existing] = await db
+        .select({ id: formsTable.id })
+        .from(formsTable)
+        .where(eq(formsTable.slug, candidate))
+        .limit(1);
+      if (!existing) return candidate;
+    }
+    throw new ServiceError("INTERNAL", "Unable to generate unique slug");
   }
 
   private normalizeUnexpectedDbError(error: unknown): never {
     const dbError = error as { code?: string; detail?: string; constraint?: string } | undefined;
     if (dbError?.code === "23505") {
+      if (dbError.constraint === "form_responses_form_ip_hash_unique") {
+        throw new ServiceError("FORBIDDEN", "You have already submitted this form.");
+      }
       throw new ServiceError("CONFLICT", "A unique constraint was violated", {
         detail: dbError.detail,
         constraint: dbError.constraint,
@@ -65,16 +149,20 @@ export class FormService {
 
   async createForm(ownerId: string, payload: unknown) {
     const data = await createFormInputModel.parseAsync(payload);
+    const slug = data.slug ?? (await this.generateUniqueSlug(data.title));
+    let createdForm:
+      | Awaited<ReturnType<typeof db.transaction<(typeof formsTable)["$inferSelect"]>>>
+      | undefined;
 
     try {
-      return await db.transaction(async (tx) => {
+      createdForm = await db.transaction(async (tx) => {
         const [form] = await tx
           .insert(formsTable)
           .values({
             ownerId,
             title: data.title,
             description: data.description,
-            slug: data.slug,
+            slug,
             themeKey: data.themeKey,
             visibility: data.visibility,
             isTemplate: data.isTemplate,
@@ -97,6 +185,18 @@ export class FormService {
     } catch (error) {
       this.normalizeUnexpectedDbError(error);
     }
+
+    if (!createdForm) {
+      throw new ServiceError("INTERNAL", "Failed to create form");
+    }
+
+    try {
+      await this.sendCreatorFormCreatedEmail(ownerId, createdForm);
+    } catch (error) {
+      logger.error("Failed to send creator form-created email", { ownerId, formId: createdForm.id, error });
+    }
+
+    return createdForm;
   }
 
   async updateForm(ownerId: string, formId: string, payload: unknown) {
@@ -174,7 +274,10 @@ export class FormService {
     return { ...form, fields };
   }
 
-  async getPublicFormBySlug(slugInput: unknown) {
+  async getPublicFormBySlug(
+    slugInput: unknown,
+    requestMeta?: { ip?: string; userAgent?: string | string[] | undefined },
+  ) {
     const { slug } = await formPublicReadInputModel.parseAsync(slugInput);
 
     const [form] = await db
@@ -188,11 +291,30 @@ export class FormService {
       throw new ServiceError("FORBIDDEN", "Form is expired");
     }
 
+    const ipHash = requestMeta?.ip ? this.hashSubject(requestMeta.ip) : this.hashSubject("unknown");
+    const [existingResponseFromIp] = await db
+      .select({ id: formResponsesTable.id })
+      .from(formResponsesTable)
+      .where(and(eq(formResponsesTable.formId, form.id), eq(formResponsesTable.ipHash, ipHash)))
+      .limit(1);
+
+    if (existingResponseFromIp) {
+      throw new ServiceError("FORBIDDEN", "You have already submitted this form.");
+    }
+
     const fields = await db
       .select()
       .from(formFieldsTable)
       .where(eq(formFieldsTable.formId, form.id))
       .orderBy(asc(formFieldsTable.order));
+
+    await db.insert(formViewsTable).values({
+      formId: form.id,
+      ipHash: requestMeta?.ip ? this.hashSubject(requestMeta.ip) : null,
+      userAgent: Array.isArray(requestMeta?.userAgent)
+        ? requestMeta?.userAgent.join(", ").slice(0, 500)
+        : requestMeta?.userAgent?.slice(0, 500) ?? null,
+    });
 
     return {
       ...form,
@@ -279,8 +401,9 @@ export class FormService {
 
   async submitPublishedForm(payload: SubmitFormInputType, subject: { ip?: string; userAgent?: string }) {
     const data = await submitFormInputModel.parseAsync(payload);
-    const subjectRaw = `${subject.ip ?? "unknown"}:${subject.userAgent ?? "unknown"}`;
+    const subjectRaw = subject.ip ?? "unknown";
     await this.checkAndConsumeRateLimit("public_form_submit", subjectRaw);
+    let submissionResult: { responseId: string; formId: string } | undefined;
 
     const [form] = await db
       .select()
@@ -299,6 +422,17 @@ export class FormService {
       throw new ServiceError("FORBIDDEN", "Response limit reached");
     }
 
+    const ipHash = this.hashSubject(subject.ip ?? "unknown");
+    const [existingResponseFromIp] = await db
+      .select({ id: formResponsesTable.id })
+      .from(formResponsesTable)
+      .where(and(eq(formResponsesTable.formId, form.id), eq(formResponsesTable.ipHash, ipHash)))
+      .limit(1);
+
+    if (existingResponseFromIp) {
+      throw new ServiceError("FORBIDDEN", "You have already submitted this form.");
+    }
+
     const fields = await db
       .select()
       .from(formFieldsTable)
@@ -314,30 +448,81 @@ export class FormService {
       }
     }
 
-    return db.transaction(async (tx) => {
-      const [response] = await tx
-        .insert(formResponsesTable)
-        .values({
+    try {
+      submissionResult = await db.transaction(async (tx) => {
+        const [response] = await tx
+          .insert(formResponsesTable)
+          .values({
+            formId: form.id,
+            respondentEmail: data.respondentEmail,
+            ipHash,
+            userAgent: subject.userAgent,
+          })
+          .returning({ id: formResponsesTable.id });
+        if (!response?.id) throw new ServiceError("INTERNAL", "Failed to persist response");
+
+        if (parsedAnswers.length > 0) {
+          await tx.insert(formResponseItemsTable).values(
+            parsedAnswers.map((answer) => ({
+              responseId: response.id,
+              formFieldId: answer.fieldId,
+              value: answer.value,
+            })),
+          );
+        }
+
+        return { responseId: response.id, formId: form.id };
+      });
+    } catch (error) {
+      this.normalizeUnexpectedDbError(error);
+    }
+
+    if (!submissionResult) {
+      throw new ServiceError("INTERNAL", "Failed to persist response");
+    }
+
+    if (data.respondentEmail) {
+      try {
+        await this.sendRespondentConfirmationEmail(data.respondentEmail, form);
+      } catch (error) {
+        logger.error("Failed to send respondent confirmation email", {
           formId: form.id,
           respondentEmail: data.respondentEmail,
-          ipHash: this.hashSubject(subject.ip ?? "unknown"),
-          userAgent: subject.userAgent,
-        })
-        .returning({ id: formResponsesTable.id });
-      if (!response?.id) throw new ServiceError("INTERNAL", "Failed to persist response");
-
-      if (parsedAnswers.length > 0) {
-        await tx.insert(formResponseItemsTable).values(
-          parsedAnswers.map((answer) => ({
-            responseId: response.id,
-            formFieldId: answer.fieldId,
-            value: answer.value,
-          })),
-        );
+          error,
+        });
       }
+    }
 
-      return { responseId: response.id, formId: form.id };
-    });
+    return submissionResult;
+  }
+
+  async sendPendingExpiryNotifications() {
+    const expiredForms = await db
+      .select({
+        id: formsTable.id,
+        ownerId: formsTable.ownerId,
+        title: formsTable.title,
+        slug: formsTable.slug,
+        expiresAt: formsTable.expiresAt,
+      })
+      .from(formsTable)
+      .where(and(isNull(formsTable.expiryNotificationSentAt), lt(formsTable.expiresAt, new Date())));
+
+    for (const form of expiredForms) {
+      if (!form.expiresAt) continue;
+
+      try {
+        await this.sendCreatorFormExpiredEmail(form);
+        await db
+          .update(formsTable)
+          .set({ expiryNotificationSentAt: new Date() })
+          .where(eq(formsTable.id, form.id));
+      } catch (error) {
+        logger.error("Failed to send creator expiry email", { formId: form.id, error });
+      }
+    }
+
+    return expiredForms.length;
   }
 
   async getResponseAnalytics(ownerId: string, formId: string) {
@@ -353,6 +538,11 @@ export class FormService {
       .from(formResponsesTable)
       .where(eq(formResponsesTable.formId, formId));
 
+    const [totalViews] = await db
+      .select({ count: count() })
+      .from(formViewsTable)
+      .where(eq(formViewsTable.formId, formId));
+
     const dailyResponses = await db.execute(sql`
       select date_trunc('day', submitted_at) as day, count(*)::int as count
       from form_responses
@@ -362,13 +552,163 @@ export class FormService {
       limit 30
     `);
 
+    const dailyViews = await db.execute(sql`
+      select date_trunc('day', viewed_at) as day, count(*)::int as count
+      from form_views
+      where form_id = ${formId}
+      group by 1
+      order by 1 desc
+      limit 30
+    `);
+
+    const totalResponseCount = totalResponses?.count ?? 0;
+    const totalViewCount = totalViews?.count ?? 0;
+
     return {
       formId,
-      totalResponses: totalResponses?.count ?? 0,
+      totalResponses: totalResponseCount,
+      totalViews: totalViewCount,
+      completionRate: totalViewCount > 0 ? Number(((totalResponseCount / totalViewCount) * 100).toFixed(1)) : 0,
       dailyResponses: dailyResponses.rows.map((row) => ({
         day: row.day,
         count: Number(row.count ?? 0),
       })),
+      dailyViews: dailyViews.rows.map((row) => ({
+        day: row.day,
+        count: Number(row.count ?? 0),
+      })),
+    };
+  }
+
+  async getOwnerDashboardAnalytics(ownerId: string) {
+    const forms = await db
+      .select({
+        id: formsTable.id,
+        title: formsTable.title,
+        slug: formsTable.slug,
+        status: formsTable.status,
+        createdAt: formsTable.createdAt,
+      })
+      .from(formsTable)
+      .where(eq(formsTable.ownerId, ownerId))
+      .orderBy(desc(formsTable.createdAt));
+
+    const formIds = forms.map((form) => form.id);
+    const totalForms = forms.length;
+    const publishedForms = forms.filter((form) => form.status === "published").length;
+    const unpublishedForms = totalForms - publishedForms;
+
+    if (formIds.length === 0) {
+      return {
+        totalForms: 0,
+        publishedForms: 0,
+        unpublishedForms: 0,
+        totalResponses: 0,
+        totalViews: 0,
+        overallCompletionRate: 0,
+        dailyResponses: [],
+        dailyViews: [],
+        formsByStatus: [
+          { status: "draft" as const, count: 0 },
+          { status: "published" as const, count: 0 },
+          { status: "archived" as const, count: 0 },
+        ],
+        topForms: [],
+      };
+    }
+
+    const [totalResponses] = await db
+      .select({ count: count() })
+      .from(formResponsesTable)
+      .where(inArray(formResponsesTable.formId, formIds));
+
+    const [totalViews] = await db
+      .select({ count: count() })
+      .from(formViewsTable)
+      .where(inArray(formViewsTable.formId, formIds));
+
+    const dailyResponses = await db.execute(sql`
+      select date_trunc('day', fr.submitted_at) as day, count(*)::int as count
+      from form_responses fr
+      inner join forms f on f.id = fr.form_id
+      where f.owner_id = ${ownerId}
+      group by 1
+      order by 1 desc
+      limit 30
+    `);
+
+    const dailyViews = await db.execute(sql`
+      select date_trunc('day', fv.viewed_at) as day, count(*)::int as count
+      from form_views fv
+      inner join forms f on f.id = fv.form_id
+      where f.owner_id = ${ownerId}
+      group by 1
+      order by 1 desc
+      limit 30
+    `);
+
+    const responseCounts = await db
+      .select({
+        formId: formResponsesTable.formId,
+        count: count(),
+      })
+      .from(formResponsesTable)
+      .where(inArray(formResponsesTable.formId, formIds))
+      .groupBy(formResponsesTable.formId);
+
+    const viewCounts = await db
+      .select({
+        formId: formViewsTable.formId,
+        count: count(),
+      })
+      .from(formViewsTable)
+      .where(inArray(formViewsTable.formId, formIds))
+      .groupBy(formViewsTable.formId);
+
+    const responseCountMap = new Map(responseCounts.map((row) => [row.formId, row.count]));
+    const viewCountMap = new Map(viewCounts.map((row) => [row.formId, row.count]));
+
+    const topForms = forms
+      .map((form) => {
+        const responseCount = responseCountMap.get(form.id) ?? 0;
+        const viewCount = viewCountMap.get(form.id) ?? 0;
+        return {
+          formId: form.id,
+          title: form.title,
+          slug: form.slug,
+          status: form.status,
+          responseCount,
+          viewCount,
+          completionRate: viewCount > 0 ? Number(((responseCount / viewCount) * 100).toFixed(1)) : 0,
+        };
+      })
+      .sort((a, b) => (b.responseCount === a.responseCount ? b.viewCount - a.viewCount : b.responseCount - a.responseCount))
+      .slice(0, 6);
+
+    const totalResponseCount = totalResponses?.count ?? 0;
+    const totalViewCount = totalViews?.count ?? 0;
+
+    return {
+      totalForms,
+      publishedForms,
+      unpublishedForms,
+      totalResponses: totalResponseCount,
+      totalViews: totalViewCount,
+      overallCompletionRate: totalViewCount > 0 ? Number(((totalResponseCount / totalViewCount) * 100).toFixed(1)) : 0,
+      dailyResponses: dailyResponses.rows.map((row) => ({
+        day: row.day,
+        count: Number(row.count ?? 0),
+      })),
+      dailyViews: dailyViews.rows.map((row) => ({
+        day: row.day,
+        count: Number(row.count ?? 0),
+      })),
+      formsByStatus: [
+        { status: "draft" as const, count: forms.filter((form) => form.status === "draft").length },
+        { status: "published" as const, count: publishedForms },
+        { status: "archived" as const, count: forms.filter((form) => form.status === "archived").length },
+      ],
+      topForms,
     };
   }
 
@@ -530,6 +870,16 @@ export class FormService {
 
     if (!updated) throw new ServiceError("NOT_FOUND", "Form not found");
     return updated;
+  }
+
+  async deleteForm(ownerId: string, formId: string) {
+    const [deleted] = await db
+      .delete(formsTable)
+      .where(and(eq(formsTable.id, formId), eq(formsTable.ownerId, ownerId)))
+      .returning();
+
+    if (!deleted) throw new ServiceError("NOT_FOUND", "Form not found");
+    return deleted;
   }
 
   private async checkAndConsumeRateLimit(routeKey: string, subjectRaw: string) {

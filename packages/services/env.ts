@@ -3,6 +3,11 @@ import { z } from "zod";
 const envSchema = z.object({
   JWT_SECRET: z.string().describe("Secret key for JWT tokens"),
   JWT_EXPIRES_IN: z.string().default("7d"),
+  GOOGLE_CLIENT_ID: z.string().describe("Google OAuth client id for verifying Google sign-in"),
+  RESEND_API_KEY: z.string().optional(),
+  EMAIL_FROM: z.string().optional(),
+  EMAIL_REPLY_TO: z.string().optional(),
+  APP_WEB_URL: z.string().optional(),
 });
 
 function createEnv(env: NodeJS.ProcessEnv) {

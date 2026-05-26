@@ -1,5 +1,6 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import * as JWT from "jsonwebtoken";
+import { OAuth2Client } from "google-auth-library";
 import { db, eq } from "@repo/database";
 import { usersTable } from "@repo/database/models/user";
 import { env } from "../env";
@@ -8,6 +9,8 @@ import {
   type CreateUserWithEmailAndPasswordType,
   generateUserTokenPayload,
   type GenerateUserTokenPayloadType,
+  signInWithGoogleInput,
+  type SignInWithGoogleInputType,
   signInUserWithEmailAndPasswordInput,
   type SignInUserWithEmailAndPasswordInputType,
   type UpdateUserProfileInputType,
@@ -15,8 +18,15 @@ import {
 } from "./model";
 
 export class UserService {
+  private googleClient = new OAuth2Client(env.GOOGLE_CLIENT_ID);
+
   private async getUserByEmail(email: string) {
     const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
+    return user ?? null;
+  }
+
+  private async getUserByGoogleSub(googleSub: string) {
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.googleSub, googleSub)).limit(1);
     return user ?? null;
   }
 
@@ -79,13 +89,75 @@ export class UserService {
     return { id: existingUser.id, token };
   }
 
+  async signInWithGoogle(payload: SignInWithGoogleInputType) {
+    const { idToken } = await signInWithGoogleInput.parseAsync(payload);
+    const ticket = await this.googleClient.verifyIdToken({
+      idToken,
+      audience: env.GOOGLE_CLIENT_ID,
+    });
+    const tokenPayload = ticket.getPayload();
+
+    if (!tokenPayload?.sub || !tokenPayload.email) {
+      throw new Error("invalid google account payload");
+    }
+
+    const email = tokenPayload.email.toLowerCase();
+    const fullName = tokenPayload.name?.trim() || email.split("@")[0] || "Google User";
+    const profileImageUrl = tokenPayload.picture ?? null;
+
+    let user = await this.getUserByGoogleSub(tokenPayload.sub);
+
+    if (!user) {
+      const existingByEmail = await this.getUserByEmail(email);
+
+      if (existingByEmail) {
+        const [updated] = await db
+          .update(usersTable)
+          .set({
+            googleSub: tokenPayload.sub,
+            emailVerified: true,
+            profileImageUrl: existingByEmail.profileImageUrl ?? profileImageUrl,
+            fullName: existingByEmail.fullName || fullName,
+          })
+          .where(eq(usersTable.id, existingByEmail.id))
+          .returning();
+
+        user = updated ?? null;
+      } else {
+        const [created] = await db
+          .insert(usersTable)
+          .values({
+            email,
+            fullName,
+            googleSub: tokenPayload.sub,
+            emailVerified: true,
+            profileImageUrl,
+          })
+          .returning();
+
+        user = created ?? null;
+      }
+    }
+
+    if (!user?.id) {
+      throw new Error("something went wrong while signing in with google");
+    }
+
+    const { token } = await this.generateUserToken({ id: user.id });
+    return { id: user.id, token };
+  }
+
   async updateUserProfile(userId: string, payload: UpdateUserProfileInputType) {
     const parsed = await updateUserProfileInput.parseAsync(payload);
     const [updated] = await db
       .update(usersTable)
       .set({
         fullName: parsed.fullName,
+        username: parsed.username,
         profileImageUrl: parsed.profileImageUrl ?? null,
+        bio: parsed.bio ?? null,
+        websiteUrl: parsed.websiteUrl ?? null,
+        socialLinks: parsed.socialLinks ?? {},
       })
       .where(eq(usersTable.id, userId))
       .returning();
