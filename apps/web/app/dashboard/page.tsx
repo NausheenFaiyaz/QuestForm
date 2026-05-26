@@ -180,7 +180,7 @@ export default function DashboardPage() {
         <AppSidebar />
 
         <section className="relative flex-1 overflow-y-auto overflow-x-hidden bg-[#fff8ee] px-4 py-5 sm:px-6 lg:px-8 xl:h-screen">
-          <div className="absolute inset-x-0 top-0 h-56 bg-[radial-gradient(circle_at_top,_rgba(255,220,128,0.38),_transparent_60%)]" />
+          <div className="absolute inset-x-0 top-0 h-56 bg-[#c85ef6] border-b-4" />
           <div className="relative">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
               <div className="max-w-3xl">
@@ -200,7 +200,7 @@ export default function DashboardPage() {
                     </h1>
                   </div>
                 </div>
-                <p className="mt-5 text-lg font-semibold text-[#5d4d38]">
+                <p className="mt-5 text-lg font-semibold text-[#ffffff]">
                   Let&apos;s build something awesome today.
                 </p>
               </div>

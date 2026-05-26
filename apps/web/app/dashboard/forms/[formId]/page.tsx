@@ -46,13 +46,13 @@ export default function EditFormPage() {
 
   return (
     <main className="comic-dashboard-shell min-h-screen bg-[#fff8ee]">
-      <div className="mx-auto flex min-h-screen max-w-440 flex-col xl:h-screen xl:flex-row">
+      <div className="mx-auto flex min-h-screen max-w-[1760px] flex-col xl:h-screen xl:flex-row">
         <AppSidebar />
         <section className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-5 sm:px-6 lg:px-8 xl:h-screen">
-          <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-[1.6rem] border-[3px] border-black bg-white px-5 py-4 shadow-[5px_5px_0_#000]">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-[1.6rem] border-[3px] border-black bg-[#c85ef6] px-5 py-4 shadow-[5px_5px_0_#000]">
             <div>
-              <h1 className="font-pixel text-4xl uppercase text-[#16110d]">Edit: {form.title}</h1>
-              <p className="mt-1 text-sm font-semibold uppercase tracking-[0.14em] text-[#6d5b44]">
+              <h1 className="font-pixel text-2xl uppercase text-[#16110d]">Edit: {form.title}</h1>
+              <p className="mt-1 text-sm font-semibold uppercase tracking-[0.14em] text-[#ffffff]">
                 Visibility: {form.visibility} | Status: {form.status}
               </p>
             </div>

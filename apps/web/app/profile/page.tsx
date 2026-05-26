@@ -128,11 +128,18 @@ export default function ProfilePage() {
     setIsEditing(false);
   };
 
-  if (me.isLoading) return <main className="mx-auto max-w-6xl px-4 py-10">Loading profile...</main>;
+  if (me.isLoading) {
+    return (
+      <main className="comic-dashboard-shell min-h-screen px-4 py-10">
+        <div className="mx-auto max-w-6xl">Loading profile...</div>
+      </main>
+    );
+  }
   if (!user || me.error) {
     return (
-      <main className="comic-dashboard-shell mx-auto max-w-6xl px-4 py-10">
-        <div className="comic-paper-panel p-6">
+      <main className="comic-dashboard-shell min-h-screen px-4 py-10">
+        <div className="mx-auto max-w-6xl">
+          <div className="comic-paper-panel p-6">
           <p className="text-red-700">Please sign in to view your profile.</p>
           <div className="mt-4">
             <a href="/signin" className="comic-button px-5 py-3 text-lg">
@@ -140,13 +147,14 @@ export default function ProfilePage() {
             </a>
           </div>
         </div>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="comic-dashboard-shell mx-auto max-w-6xl px-4 py-8">
-      <section>
+    <main className="comic-dashboard-shell min-h-screen px-4 py-8">
+      <section className="mx-auto max-w-6xl">
         <div className="relative h-64 overflow-hidden rounded-[2rem] border-[4px] border-black bg-[#ffd84e] shadow-[7px_7px_0_#000]">
           <Image
             src={cityBackdrop}

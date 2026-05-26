@@ -232,7 +232,7 @@ function editorPanel(title: string, subtitle: string, children: ReactNode) {
   return (
     <section className="rounded-[1.7rem] border-[3px] border-black bg-white/95 p-4 shadow-[5px_5px_0_#000]">
       <div className="mb-4">
-        <h3 className="font-pixel text-2xl uppercase text-[#241257]">{title}</h3>
+        <h3 className="font-pixel text-2xl uppercase text-[#53bd78]">{title}</h3>
         <p className="mt-1 text-sm font-semibold text-[#6d5b44]">{subtitle}</p>
       </div>
       {children}
@@ -486,7 +486,7 @@ export function FormEditor({
             </div>
           </div>
           <div className="text-center">
-            <h1 className="font-pixel text-[clamp(1.5rem,3.5vw,2.5rem)] uppercase text-[#16110d]">Create New Form</h1>
+            <h1 className="font-pixel text-[clamp(1.5rem,3.5vw,2rem)] uppercase text-[#16110d]">Create New Form</h1>
           </div>
           <div className="flex flex-wrap justify-end gap-3">
             <button
@@ -515,7 +515,7 @@ export function FormEditor({
               <div className="space-y-5">
                 {elementGroups.map((group) => (
                   <div key={group.title}>
-                    <p className="mb-3 font-pixel text-lg uppercase text-[#6f42ec]">{group.title}</p>
+                    <p className="mb-3 font-pixel text-lg uppercase text-[#d92834]">{group.title}</p>
                     <div className="space-y-2">
                       {group.items.map((item) => {
                         const Icon = item.icon;
@@ -554,7 +554,7 @@ export function FormEditor({
                 ))}
 
                 <div className="rounded-[1.2rem] border-[2px] border-dashed border-black bg-[#fff7d7] p-3">
-                  <p className="font-pixel text-lg uppercase text-[#241257]">Custom Field</p>
+                  <p className="font-pixel text-lg uppercase text-[#000]">Custom Field</p>
                   <p className="mt-1 text-sm font-semibold text-[#6d5b44]">{getCustomFieldTemplate(customFieldTemplateKey).hint}</p>
                   <select
                     value={customFieldTemplateKey}
@@ -625,7 +625,7 @@ export function FormEditor({
 
           <div className="space-y-4">
             <section className="rounded-[1.7rem] border-[3px] border-black bg-white/95 p-4 shadow-[5px_5px_0_#000]">
-              <label className="mb-2 block font-pixel text-lg uppercase text-[#241257]">Form Title</label>
+              <label className="mb-2 block font-pixel text-lg uppercase text-[#d92834]">Form Title</label>
               <input
                 className={shellInputClassName()}
                 value={value.title}
@@ -764,7 +764,7 @@ export function FormEditor({
               "Control the whole form experience",
               <div className="space-y-4">
                 <div>
-                  <label className="mb-2 block font-pixel text-lg uppercase text-[#241257]">Description</label>
+                  <label className="mb-2 block font-pixel text-lg uppercase text-[#d92834]">Description</label>
                   <textarea
                     className={shellTextareaClassName()}
                     value={value.description ?? ""}
@@ -773,7 +773,7 @@ export function FormEditor({
                   />
                 </div>
                 <div>
-                  <label className="mb-2 block font-pixel text-lg uppercase text-[#241257]">Slug</label>
+                  <label className="mb-2 block font-pixel text-lg uppercase text-[#d92834]">Slug</label>
                   <input
                     className={shellInputClassName()}
                     value={value.slug ?? ""}
@@ -782,7 +782,7 @@ export function FormEditor({
                   />
                 </div>
                 <div>
-                  <label className="mb-2 block font-pixel text-lg uppercase text-[#241257]">Visibility</label>
+                  <label className="mb-2 block font-pixel text-lg uppercase text-[#d92834]">Visibility</label>
                   <select
                     value={value.visibility}
                     onChange={(event) => setValue((prev) => ({ ...prev, visibility: event.target.value as "public" | "unlisted" }))}
@@ -793,7 +793,7 @@ export function FormEditor({
                   </select>
                 </div>
                 <div>
-                  <label className="mb-2 block font-pixel text-lg uppercase text-[#241257]">Theme Key</label>
+                  <label className="mb-2 block font-pixel text-lg uppercase text-[#d92834]">Theme Key</label>
                   <input
                     className={shellInputClassName()}
                     value={value.themeKey}
@@ -801,7 +801,7 @@ export function FormEditor({
                   />
                 </div>
                 <div>
-                  <label className="mb-2 block font-pixel text-lg uppercase text-[#241257]">Expiry Date & Time</label>
+                  <label className="mb-2 block font-pixel text-lg uppercase text-[#d92834]">Expiry Date & Time</label>
                   <input
                     type="datetime-local"
                     className={shellInputClassName()}
@@ -1027,10 +1027,10 @@ export function FormEditor({
 
       {showPreview ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
-          <div className="w-full max-w-5xl rounded-[2rem] border-[3px] border-black bg-[#fffaf0] p-5 shadow-[8px_8px_0_#000]">
+          <div className="flex h-[min(80vh,820px)] w-full max-w-5xl flex-col rounded-[2rem] border-[3px] border-black bg-[#fffaf0] p-5 shadow-[8px_8px_0_#000]">
             <div className="mb-4 flex items-center justify-between gap-4">
               <div>
-                <h3 className="font-pixel text-3xl uppercase text-[#16110d]">
+                <h3 className="font-pixel text-2xl uppercase text-[#16110d]">
                   Preview ({previewIndex + 1}/{contentBlocks.length})
                 </h3>
                 <p className="text-sm font-semibold text-[#6d5b44]">Comic-style live preview of your form flow.</p>
@@ -1044,7 +1044,8 @@ export function FormEditor({
               </button>
             </div>
 
-            <div className="rounded-[1.7rem] border-[3px] border-black bg-white p-6 shadow-[5px_5px_0_#000]">
+            <div className="flex-1 overflow-y-auto">
+              <div className="h-full min-h-72 rounded-[1.7rem] border-[3px] border-black bg-white p-6 shadow-[5px_5px_0_#000]">
               {(() => {
                 const block = contentBlocks[previewIndex];
                 if (!block) {
@@ -1054,7 +1055,7 @@ export function FormEditor({
                 if (block.kind === "welcome") {
                   return (
                     <div>
-                      <h4 className="font-pixel text-4xl uppercase text-[#16110d]">{meta.welcomeTitle}</h4>
+                      <h4 className="font-pixel text-2xl uppercase text-[#16110d]">{meta.welcomeTitle}</h4>
                       <p className="mt-3 text-lg font-semibold text-[#4e4030]">{meta.welcomeDescription}</p>
                     </div>
                   );
@@ -1063,7 +1064,7 @@ export function FormEditor({
                 if (block.kind === "end") {
                   return (
                     <div>
-                      <h4 className="font-pixel text-4xl uppercase text-[#16110d]">{meta.endTitle}</h4>
+                      <h4 className="font-pixel text-2xl uppercase text-[#16110d]">{meta.endTitle}</h4>
                       <p className="mt-3 text-lg font-semibold text-[#4e4030]">{meta.endDescription}</p>
                     </div>
                   );
@@ -1072,7 +1073,7 @@ export function FormEditor({
                 if (block.kind === "contact") {
                   return (
                     <div className="space-y-4">
-                      <h4 className="font-pixel text-4xl uppercase text-[#16110d]">Contact Info</h4>
+                      <h4 className="font-pixel text-2xl uppercase text-[#16110d]">Contact Info</h4>
                       {block.fieldIndexes.map((idx) => {
                         const field = value.fields[idx];
                         return field ? (
@@ -1093,12 +1094,13 @@ export function FormEditor({
 
                 return (
                   <div>
-                    <h4 className="font-pixel text-4xl uppercase text-[#16110d]">{field.label}</h4>
+                    <h4 className="font-pixel text-2xl uppercase text-[#16110d]">{field.label}</h4>
                     <p className="mt-3 text-lg font-semibold text-[#4e4030]">{field.helpText || "Description optional"}</p>
                     <div className="mt-6">{renderFieldPreview(field)}</div>
                   </div>
                 );
               })()}
+              </div>
             </div>
 
             <div className="mt-5 flex justify-between">

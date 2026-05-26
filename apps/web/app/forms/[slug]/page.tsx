@@ -137,8 +137,8 @@ export default function PublicFormPage() {
           <div className="border-b-[3px] border-black px-5 py-5 sm:px-8">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="font-pixel text-lg uppercase text-[#6f42ec]">FormQuest Preview</p>
-                <h1 className="mt-1 font-pixel text-[clamp(2rem,4vw,3.5rem)] uppercase text-[#16110d]">
+                <p className="font-pixel text-lg uppercase text-[#4f46e5]">FormQuest</p>
+                <h1 className="mt-1 font-pixel text-[clamp(2rem,4vw,2.5rem)] uppercase text-[#16110d]">
                   {detail.data.title}
                 </h1>
                 <p className="mt-2 text-base font-semibold text-[#5d4d38]">
@@ -152,20 +152,21 @@ export default function PublicFormPage() {
           </div>
 
           <div className="p-5 sm:p-8">
-            <div className="rounded-[1.7rem] border-[3px] border-black bg-[#fffdf7] p-6 shadow-[4px_4px_0_#000]">
+            <div className="h-[min(62vh,560px)] rounded-[1.7rem] border-[3px] border-black bg-[#fffdf7] p-6 shadow-[4px_4px_0_#000]">
+              <div className="h-full overflow-y-auto pr-1">
               {currentSlide?.kind === "welcome" ? (
-                <div className="min-h-72">
-                  <h2 className="font-pixel text-5xl uppercase text-[#16110d]">{currentSlide.title}</h2>
+                <div className="min-h-full">
+                  <h2 className="font-pixel text-2xl uppercase text-[#16110d]">{currentSlide.title}</h2>
                   <p className="mt-4 text-lg font-semibold text-[#4e4030]">{currentSlide.text}</p>
                 </div>
               ) : null}
 
               {currentSlide?.kind === "end" ? (
-                <div className="min-h-72">
-                  <h2 className="font-pixel text-5xl uppercase text-[#16110d]">{currentSlide.title}</h2>
+                <div className="min-h-full">
+                  <h2 className="font-pixel text-2xl uppercase text-[#16110d]">{currentSlide.title}</h2>
                   <p className="mt-4 text-lg font-semibold text-[#4e4030]">{currentSlide.text}</p>
                   <div className="mt-6">
-                    <label className="mb-2 block font-pixel text-lg uppercase text-[#241257]">Optional respondent email</label>
+                    <label className="mb-2 block font-pixel text-lg uppercase text-[#d92834]">Optional respondent email</label>
                     <input
                       value={respondentEmail}
                       onChange={(event) => setRespondentEmail(event.target.value)}
@@ -178,8 +179,8 @@ export default function PublicFormPage() {
               ) : null}
 
               {currentSlide?.kind === "contact" ? (
-                <div className="min-h-72">
-                  <h2 className="font-pixel text-4xl uppercase text-[#16110d]">Contact Info</h2>
+                <div className="min-h-full">
+                  <h2 className="font-pixel text-2xl uppercase text-[#16110d]">Contact Info</h2>
                   <p className="mb-5 mt-3 text-lg font-semibold text-[#4e4030]">Please share your details below.</p>
                   <div className="space-y-4">
                     {currentSlide.fields.map((field) => {
@@ -210,8 +211,8 @@ export default function PublicFormPage() {
               ) : null}
 
               {currentSlide?.kind === "field" ? (
-                <div className="min-h-72">
-                  <h2 className="font-pixel text-4xl uppercase text-[#16110d]">
+                <div className="min-h-full">
+                  <h2 className="font-pixel text-42l uppercase text-[#16110d]">
                     {currentSlide.field.label} {currentSlide.field.isRequired ? "*" : ""}
                   </h2>
                   <p className="mb-5 mt-3 text-lg font-semibold text-[#4e4030]">
@@ -268,7 +269,7 @@ export default function PublicFormPage() {
                                 onClick={() => setAnswers((prev) => ({ ...prev, [field.fieldKey]: option }))}
                                 className={[
                                   "flex w-full items-center gap-3 rounded-[1rem] border-[2px] px-4 py-3 text-left font-semibold shadow-[3px_3px_0_#000]",
-                                  selected ? "border-black bg-[#6f42ec] text-white" : "border-black bg-white text-[#16110d]",
+                                  selected ? "border-black bg-[#4f46e5] text-white" : "border-black bg-white text-[#16110d]",
                                 ].join(" ")}
                               >
                                 <span className="rounded-full border border-black bg-[#fff7dc] px-2 py-1 text-sm text-[#16110d]">
@@ -400,6 +401,7 @@ export default function PublicFormPage() {
                   })()}
                 </div>
               ) : null}
+              </div>
             </div>
 
             {submitForm.error ? <p className="mt-4 text-base font-semibold text-[#b42318]">{submitForm.error.message}</p> : null}
@@ -429,7 +431,7 @@ export default function PublicFormPage() {
                   type="button"
                   onClick={submitResponses}
                   disabled={submitForm.isPending}
-                  className="inline-flex items-center gap-2 rounded-[1rem] border-[3px] border-black bg-[#6f42ec] px-4 py-3 font-pixel text-lg uppercase text-white shadow-[3px_3px_0_#000] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex items-center gap-2 rounded-[1rem] border-[3px] border-black bg-[#4f46e5] px-4 py-3 font-pixel text-lg uppercase text-white shadow-[3px_3px_0_#000] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <Mail className="h-4 w-4" />
                   {submitForm.isPending ? "Submitting..." : "Submit"}
