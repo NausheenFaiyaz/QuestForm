@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useState } from "react";
 import { Lock, Mail, User, Eye, EyeOff } from "lucide-react";
 import { GoogleAuthButton } from "~/components/site/google-auth-button";
 import { useGoogleSignin, useSignup } from "~/hooks/api/auth";
@@ -40,8 +40,8 @@ export default function SignupPage() {
     <main className="relative min-h-[calc(100vh-160px)] overflow-hidden bg-[linear-gradient(180deg,#67b9ff_0%,#8bd3ff_28%,#fff4dc_28%,#fff4dc_100%)] px-4 py-10">
       <div className="mx-auto max-w-6xl">
         <div className="flex justify-center">
-          <div className="w-full max-w-[430px] rotate-[-2deg] rounded-[2.25rem] border-[4px] border-black bg-[#fffdf7] p-5 shadow-[8px_8px_0_#000]">
-            <div className="rounded-[1.6rem] border-[2px] border-dashed border-[#e5d9c5] bg-[radial-gradient(circle_at_top,_rgba(255,208,64,0.18),_transparent_35%),linear-gradient(180deg,#fffefb_0%,#fff9ef_100%)] p-5">
+          <div className="w-full max-w-[430px] -rotate-2 rounded-[2.25rem] border-4 border-black bg-[#fffdf7] p-5 shadow-[8px_8px_0_#000]">
+            <div className="rounded-[1.6rem] border-2 border-dashed border-[#e5d9c5] bg-[radial-gradient(circle_at_top,_rgba(255,208,64,0.18),_transparent_35%),linear-gradient(180deg,#fffefb_0%,#fff9ef_100%)] p-5">
               <div className="mb-5 flex justify-center">
                 <div className="rounded-[1.2rem] border-[3px] border-black bg-[#7b3ff0] px-6 py-3 font-pixel text-3xl uppercase text-white shadow-[4px_4px_0_#000]">
                   Sign Up
