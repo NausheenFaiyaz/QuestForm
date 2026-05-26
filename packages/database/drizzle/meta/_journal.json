@@ -57,6 +57,27 @@
       "when": 1779742180146,
       "tag": "0007_bitter_aqueduct",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1780500000000,
+      "tag": "0008_refresh_token_sessions",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1779788847429,
+      "tag": "0009_sharp_stature",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1780600000000,
+      "tag": "0010_allow_multiple_responses_per_ip",
+      "breakpoints": true
     }
   ]
 }
