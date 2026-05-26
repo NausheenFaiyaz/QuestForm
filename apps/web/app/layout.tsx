@@ -26,12 +26,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${pixelFont.variable} ${bodyFont.variable} bg-[#d9e8fa] text-[#1f314a]`}>
+    <html lang="en" suppressHydrationWarning>
+      <body
+        className={`${pixelFont.variable} ${bodyFont.variable} min-h-screen bg-[rgb(2,6,23)] text-[#f8f9ff]`}
+      >
         <GlobalProviders>
-          <SiteNavbar />
-          {children}
-          <SiteFooter />
+          <div className="flex min-h-screen flex-col">
+            <SiteNavbar />
+            <main className="flex-1">{children}</main>
+            <SiteFooter />
+          </div>
         </GlobalProviders>
       </body>
     </html>
