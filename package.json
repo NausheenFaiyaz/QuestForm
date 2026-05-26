@@ -1,5 +1,5 @@
 {
-  "name": "trpc-monorepo",
+  "name": "questform",
   "private": true,
   "scripts": {
     "build": "dotenv -- turbo build",

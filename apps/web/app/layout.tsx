@@ -16,7 +16,7 @@ const bodyFont = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "ChaiForms",
+  title: "QuestForm",
   description: "Pixel-themed form builder SaaS",
 };
 

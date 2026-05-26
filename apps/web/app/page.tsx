@@ -63,7 +63,7 @@ export default function HomePage() {
               <Image src={speechBubble} alt="" className="h-auto w-full" priority />
               <div className="absolute inset-0 flex flex-col justify-center px-8 py-8 sm:px-12 sm:py-10 lg:px-16">
                 <h1 className="font-pixel text-[clamp(3rem,8vw,7rem)] uppercase leading-[0.85] text-[#d92834] [text-shadow:4px_4px_0_#000]">
-                  Questform
+                  QuestForm
                 </h1>
                 <h2 className="mt-1 font-pixel text-[clamp(2.6rem,7vw,6.4rem)] uppercase leading-[0.88] text-[#ffd22e] [text-shadow:4px_4px_0_#000]">
                   Adventure
