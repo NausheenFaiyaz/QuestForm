@@ -7,6 +7,7 @@ import { ChevronRight, LogIn, Menu, User, UserPlus, X } from "lucide-react";
 import comicElement from "~/app/assets/comic assets/comic-elem.png";
 import { useMe, useSignout } from "~/hooks/api/auth";
 import { cn } from "~/lib/utils";
+import { docsUrl } from "~/lib/docs-url";
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "~/components/ui/sheet";
 
 const publicLinks = [
@@ -14,7 +15,7 @@ const publicLinks = [
   { href: "/explore", label: "Explore" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/pricing", label: "Pricing" },
-  { href: "http://localhost:8000/docs", label: "Docs", external: true },
+  { href: docsUrl, label: "Docs", external: true },
 ];
 
 const authedLinks = [{ href: "/profile", label: "Profile" }];

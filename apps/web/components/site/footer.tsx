@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import comicElement from "~/app/assets/comic assets/comic-elem.png";
+import { docsUrl } from "~/lib/docs-url";
 
 export function SiteFooter() {
   const pathname = usePathname();
@@ -37,7 +38,7 @@ export function SiteFooter() {
           <Link href="/explore" className="transition hover:text-[#6d28d9]">
             Explore
           </Link>
-          <Link href="/" className="transition hover:text-[#6d28d9]">
+          <Link href={docsUrl} target="_blank" rel="noreferrer" className="transition hover:text-[#6d28d9]">
             Docs
           </Link>
           <Link href="/signup" className="transition hover:text-[#6d28d9]">
@@ -48,3 +49,4 @@ export function SiteFooter() {
     </footer>
   );
 }
+

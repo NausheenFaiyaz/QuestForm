@@ -4,13 +4,14 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { useMe, useSignout } from "~/hooks/api/auth";
+import { docsUrl } from "~/lib/docs-url";
 
 const sidebarLinks = [
   { href: "/", label: "Home", match: (pathname: string) => pathname === "/" },
   { href: "/explore", label: "Explore", match: (pathname: string) => pathname.startsWith("/explore") },
   { href: "/dashboard", label: "Dashboard", match: (pathname: string) => pathname.startsWith("/dashboard") },
   { href: "/pricing", label: "Pricing", match: (pathname: string) => pathname.startsWith("/pricing") },
-  { href: "http://localhost:8000/docs", label: "Docs", external: true, match: () => false },
+  { href: docsUrl, label: "Docs", external: true, match: () => false },
 ];
 
 export function AppSidebar() {
@@ -115,3 +116,4 @@ export function AppSidebar() {
     </aside>
   );
 }
+
