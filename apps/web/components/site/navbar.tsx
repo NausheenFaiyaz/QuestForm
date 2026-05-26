@@ -1,81 +1,116 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useTheme } from "next-themes";
-import { usePathname } from "next/navigation";
-import {
-  BookOpen,
-  ChevronRight,
-  Compass,
-  DollarSign,
-  LayoutDashboard,
-  LogIn,
-  Menu,
-  Moon,
-  Sun,
-  User,
-  UserPlus,
-  X,
-} from "lucide-react";
-import { PixelButton } from "./pixel-ui";
-import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetTitle,
-  SheetTrigger,
-} from "~/components/ui/sheet";
+import { usePathname, useRouter } from "next/navigation";
+import { ChevronRight, LogIn, Menu, User, UserPlus, X } from "lucide-react";
+import comicElement from "~/app/assets/comic assets/comic-elem.png";
+import { useMe, useSignout } from "~/hooks/api/auth";
 import { cn } from "~/lib/utils";
+import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "~/components/ui/sheet";
 
-const links = [
-  { href: "/", label: "Home", icon: BookOpen },
-  { href: "/explore", label: "Explore", icon: Compass },
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/profile", label: "Profile", icon: User },
-  { href: "/pricing", label: "Pricing", icon: DollarSign },
+const publicLinks = [
+  { href: "/", label: "Home" },
+  { href: "/explore", label: "Explore" },
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/pricing", label: "Pricing" },
 ];
+
+const authedLinks = [{ href: "/profile", label: "Profile" }];
 
 export function SiteNavbar() {
   const pathname = usePathname();
-  const { resolvedTheme, setTheme } = useTheme();
-  const nextTheme = resolvedTheme === "dark" ? "light" : "dark";
+  const router = useRouter();
+  const isWorkspaceRoute = pathname.startsWith("/dashboard") || pathname.startsWith("/explore");
+  const isAuthRoute = pathname === "/signin" || pathname === "/signup";
+  const me = useMe({ enabled: !isWorkspaceRoute && !isAuthRoute });
+  const { signOutAsync, isPending: isSigningOut } = useSignout();
+  const isLoggedIn = Boolean(me.data);
+  const userInitial = me.data?.fullName?.[0]?.toUpperCase() ?? "U";
+  const navLinks = isLoggedIn ? [...publicLinks, ...authedLinks] : publicLinks;
+
+  const handleSignOut = async () => {
+    await signOutAsync();
+    router.push("/signin");
+  };
+
+  if (isWorkspaceRoute) {
+    return null;
+  }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[#c5d0df] bg-[#f8fbff]/95 backdrop-blur">
-      <div className="mx-auto flex min-h-20 max-w-6xl items-center justify-between gap-3 px-4 py-2">
-        <Link href="/" className="font-pixel text-2xl text-[#091a3f] sm:text-3xl">
-          ChaiForms
+    <header className="sticky top-0 z-40 border-b-4 border-black bg-[#fff9ef]/95 backdrop-blur">
+      <div className="mx-auto flex min-h-24 max-w-7xl items-center justify-between gap-4 px-4 py-3 md:px-6 lg:px-8">
+        <Link href="/" className="relative inline-flex items-center">
+          <div className="relative rotate-[-4deg] rounded-[2rem] border-[3px] border-black bg-[#ffe04c] px-5 py-3 pr-7 shadow-[5px_5px_0_#000]">
+            <span className="font-pixel text-2xl uppercase leading-none text-black sm:text-3xl">QuestForm</span>
+          </div>
+          <Image src={comicElement} alt="" className="absolute -bottom-4 -left-3 hidden w-9 sm:block" />
         </Link>
 
-        <nav className="hidden items-center gap-6 md:flex">
-          {links.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={cn(
-                "font-pixel text-xl text-[#273a52] transition",
-                pathname === link.href && "text-[#0b62d6]",
-              )}
-            >
-              {link.label}
-            </Link>
-          ))}
+        <nav className="hidden items-center gap-8 lg:flex">
+          {navLinks.map((link) => {
+            const isProfile = link.href === "/profile";
+
+            if (isProfile) {
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={cn(
+                    "inline-flex size-12 items-center justify-center rounded-full border-[3px] border-black bg-white font-pixel text-xl text-black shadow-[4px_4px_0_#000] transition hover:-translate-y-0.5",
+                    pathname === link.href && "bg-[#ffd84e]",
+                  )}
+                  aria-label="Profile"
+                  title="Profile"
+                >
+                  {userInitial}
+                </Link>
+              );
+            }
+
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={cn(
+                  "comic-nav-link text-lg xl:text-xl",
+                  pathname === link.href && "after:scale-x-100 after:opacity-100",
+                )}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
         </nav>
 
-        <div className="hidden items-center gap-2 md:flex">
-          <PixelButton href="/signin" className="px-3 py-1.5 text-base sm:px-4 sm:text-lg">
-            Sign in
-          </PixelButton>
-          <PixelButton href="/signup" className="px-3 py-1.5 text-base sm:px-4 sm:text-lg">
-            Sign up
-          </PixelButton>
+        <div className="hidden items-center gap-3 lg:flex">
+          {isLoggedIn ? (
+            <button
+              type="button"
+              onClick={handleSignOut}
+              disabled={isSigningOut}
+              className="comic-button px-5 py-3 text-lg disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isSigningOut ? "Signing out..." : "Sign out"}
+            </button>
+          ) : (
+            <>
+              <Link href="/signin" className="comic-button comic-button--light px-5 py-3 text-lg">
+                Sign in
+              </Link>
+              <Link href="/signup" className="comic-button px-5 py-3 text-lg">
+                Sign up
+              </Link>
+            </>
+          )}
         </div>
 
         <Sheet>
           <SheetTrigger asChild>
             <button
               type="button"
-              className="inline-flex size-11 items-center justify-center rounded-[8px] border-2 border-[#9f7b00] bg-[#f9cc14] text-[#091a3f] shadow-[0_4px_0_0_#9f7b00] transition active:translate-y-[2px] active:shadow-[0_2px_0_0_#9f7b00] md:hidden"
+              className="inline-flex size-12 items-center justify-center rounded-2xl border-[3px] border-black bg-[#ffe04c] text-black shadow-[4px_4px_0_#000] lg:hidden"
               aria-label="Open menu"
             >
               <Menu className="size-6" aria-hidden="true" />
@@ -83,77 +118,70 @@ export function SiteNavbar() {
           </SheetTrigger>
           <SheetContent
             side="right"
-            className="w-[calc(100vw-28px)] max-w-[460px] gap-0 border-l border-[#dbe2ec] bg-white p-0 text-[#071224] [&>button]:hidden"
+            className="w-[calc(100vw-24px)] max-w-[420px] border-l-4 border-black bg-[#fff9ef] p-0 text-[#18110a] [&>button]:hidden"
           >
-            <div className="flex h-20 items-center gap-5 border-b border-[#dbe2ec] px-6">
+            <div className="flex items-center justify-between border-b-4 border-black px-5 py-5">
+              <SheetTitle className="font-pixel text-2xl uppercase text-black">Menu</SheetTitle>
               <SheetClose asChild>
                 <button
                   type="button"
-                  className="inline-flex size-9 items-center justify-center text-[#071224] transition hover:text-[#0b62d6]"
+                  className="inline-flex size-11 items-center justify-center rounded-2xl border-[3px] border-black bg-white text-black shadow-[4px_4px_0_#000]"
                   aria-label="Close menu"
                 >
-                  <X className="size-6" aria-hidden="true" />
+                  <X className="size-5" aria-hidden="true" />
                 </button>
               </SheetClose>
-              <SheetTitle className="font-sans text-2xl font-bold text-[#071224]">Menu</SheetTitle>
             </div>
 
-            <nav className="px-4 py-6">
-              {links.slice(1).map((link) => {
-                const Icon = link.icon;
+            <nav className="flex flex-col gap-4 px-5 py-6">
+              {navLinks.map((link) => (
+                <SheetClose asChild key={link.href}>
+                  <Link
+                    href={link.href}
+                    className={cn(
+                      "flex items-center justify-between rounded-[1.4rem] border-[3px] border-black bg-white px-5 py-4 font-pixel text-xl uppercase text-black shadow-[4px_4px_0_#000]",
+                      pathname === link.href && "bg-[#ffe04c]",
+                    )}
+                  >
+                    <span>{link.label}</span>
+                    <ChevronRight className="size-5" aria-hidden="true" />
+                  </Link>
+                </SheetClose>
+              ))}
 
-                return (
-                  <SheetClose asChild key={link.href}>
+              {!isLoggedIn ? (
+                <>
+                  <SheetClose asChild>
                     <Link
-                      href={link.href}
-                      className={cn(
-                        "flex h-[76px] items-center gap-5 border-b border-[#dbe2ec] px-5 text-xl font-bold text-[#111827] transition hover:text-[#0b62d6]",
-                        pathname === link.href && "text-[#0b62d6]",
-                      )}
+                      href="/signin"
+                      className="mt-2 flex items-center justify-between rounded-[1.4rem] border-[3px] border-black bg-white px-5 py-4 font-pixel text-xl uppercase text-black shadow-[4px_4px_0_#000]"
                     >
-                      <Icon className="size-7 shrink-0 text-[#6f819b]" strokeWidth={1.8} aria-hidden="true" />
-                      <span className="flex-1">{link.label}</span>
-                      <ChevronRight className="size-5 text-[#6f819b]" strokeWidth={2.2} aria-hidden="true" />
+                      <span>Sign in</span>
+                      <LogIn className="size-5" aria-hidden="true" />
                     </Link>
                   </SheetClose>
-                );
-              })}
-
-              <button
-                type="button"
-                onClick={() => setTheme(nextTheme)}
-                className="flex h-[76px] w-full items-center gap-5 border-b border-[#dbe2ec] px-5 text-left text-xl font-bold text-[#111827] transition hover:text-[#0b62d6]"
-              >
-                {resolvedTheme === "dark" ? (
-                  <Moon className="size-7 shrink-0 text-[#6f819b]" strokeWidth={1.8} aria-hidden="true" />
-                ) : (
-                  <Sun className="size-7 shrink-0 text-[#6f819b]" strokeWidth={1.8} aria-hidden="true" />
-                )}
-                <span className="flex-1">Switch theme</span>
-              </button>
-
-              <SheetClose asChild>
-                <Link
-                  href="/signin"
-                  className="flex h-[76px] items-center gap-5 border-b border-[#dbe2ec] px-5 text-xl font-bold text-[#111827] transition hover:text-[#0b62d6]"
+                  <SheetClose asChild>
+                    <Link
+                      href="/signup"
+                      className="flex items-center justify-between rounded-[1.4rem] border-[3px] border-black bg-[#ffe04c] px-5 py-4 font-pixel text-xl uppercase text-black shadow-[4px_4px_0_#000]"
+                    >
+                      <span>Sign up</span>
+                      <UserPlus className="size-5" aria-hidden="true" />
+                    </Link>
+                  </SheetClose>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  disabled={isSigningOut}
+                  className="mt-2 flex items-center justify-between rounded-[1.4rem] border-[3px] border-black bg-[#ffe04c] px-5 py-4 text-left font-pixel text-xl uppercase text-black shadow-[4px_4px_0_#000] disabled:opacity-60"
                 >
-                  <LogIn className="size-7 shrink-0 text-[#6f819b]" strokeWidth={1.8} aria-hidden="true" />
-                  <span className="flex-1">Sign in</span>
-                </Link>
-              </SheetClose>
+                  <span>{isSigningOut ? "Signing out..." : "Sign out"}</span>
+                  <User className="size-5" aria-hidden="true" />
+                </button>
+              )}
             </nav>
-
-            <div className="mt-auto flex justify-end px-6 pb-6">
-              <SheetClose asChild>
-                <Link
-                  href="/signup"
-                  className="inline-flex size-14 items-center justify-center rounded-full bg-[#f9cc14] text-[#071224] shadow-[0_14px_28px_rgba(9,26,63,0.18)] transition hover:-translate-y-0.5"
-                  aria-label="Sign up"
-                >
-                  <UserPlus className="size-6" aria-hidden="true" />
-                </Link>
-              </SheetClose>
-            </div>
           </SheetContent>
         </Sheet>
       </div>
