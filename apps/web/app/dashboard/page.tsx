@@ -244,7 +244,7 @@ export default function DashboardPage() {
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <p className="text-sm font-black uppercase tracking-[0.14em] text-[#5d4d38]">{card.label}</p>
-                          <p className="mt-4 font-pixel text-5xl uppercase text-[#16110d]">{card.value}</p>
+                          <p className="mt-4 font-pixel text-3xl uppercase text-[#16110d]">{card.value}</p>
                         </div>
                         <div
                           className="h-16 w-16 rounded-full border-[3px] border-black shadow-[3px_3px_0_#000]"
