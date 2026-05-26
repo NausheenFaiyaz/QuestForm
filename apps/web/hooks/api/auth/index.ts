@@ -15,8 +15,13 @@ export const useSignup = () => {
 };
 
 export const useSignin = () => {
+  const utils = trpc.useUtils();
   const { mutateAsync: signInWithEmailAndPasswordAsync, error, isPending } =
-    trpc.auth.signInWithEmailAndPassword.useMutation();
+    trpc.auth.signInWithEmailAndPassword.useMutation({
+      onSuccess: async () => {
+        await utils.auth.me.invalidate();
+      },
+    });
 
   return {
     signInWithEmailAndPasswordAsync,
@@ -25,17 +30,40 @@ export const useSignin = () => {
   };
 };
 
-export const useMe = () => {
+export const useMe = (options?: { enabled?: boolean }) => {
   return trpc.auth.me.useQuery(undefined, {
+    enabled: options?.enabled ?? true,
     retry: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
+};
+
+export const useGoogleSignin = () => {
+  const utils = trpc.useUtils();
+  const { mutateAsync: signInWithGoogleAsync, error, isPending } = trpc.auth.signInWithGoogle.useMutation({
+    onSuccess: async () => {
+      await utils.auth.me.invalidate();
+    },
+  });
+
+  return {
+    signInWithGoogleAsync,
+    error,
+    isPending,
+  };
 };
 
 export const useSignout = () => {
   const utils = trpc.useUtils();
   const { mutateAsync: signOutAsync, isPending } = trpc.auth.signOut.useMutation({
+    onMutate: async () => {
+      await utils.auth.me.cancel();
+      utils.auth.me.setData(undefined, undefined);
+    },
     onSuccess: async () => {
-      await utils.auth.me.invalidate();
+      utils.auth.me.setData(undefined, undefined);
+      await utils.auth.me.cancel();
     },
   });
 
@@ -48,8 +76,8 @@ export const useSignout = () => {
 export const useUpdateMe = () => {
   const utils = trpc.useUtils();
   const { mutateAsync: updateMeAsync, isPending, error } = trpc.auth.updateMe.useMutation({
-    onSuccess: async () => {
-      await utils.auth.me.invalidate();
+    onSuccess: (updatedUser) => {
+      utils.auth.me.setData(undefined, updatedUser);
     },
   });
 
