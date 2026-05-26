@@ -81,21 +81,23 @@ export class FormService {
     });
   }
 
-  private async sendCreatorFormExpiredEmail(form: { id: string; ownerId: string; title: string; slug: string; expiresAt: Date | null }) {
-    const [owner] = await db
-      .select({ email: usersTable.email, fullName: usersTable.fullName })
-      .from(usersTable)
-      .where(eq(usersTable.id, form.ownerId))
-      .limit(1);
+  private pickRespondentEmail(
+    explicitEmail: string | undefined,
+    fields: Array<{ fieldType: string; fieldKey: string }>,
+    answers: Record<string, unknown>,
+  ) {
+    if (explicitEmail) return explicitEmail.trim().toLowerCase();
 
-    if (!owner?.email) return;
+    const emailField = fields.find((field) => field.fieldType === "email");
+    if (!emailField) return undefined;
 
-    await this.emailService.sendEmail({
-      to: owner.email,
-      subject: `Your form "${form.title}" has expired`,
-      text: `Hi ${owner.fullName}, your form "${form.title}" has expired and is no longer accepting new responses.\nManage it here: ${this.getWebUrl()}/dashboard/forms/${form.id}`,
-      html: `<p>Hi ${owner.fullName},</p><p>Your form <strong>${form.title}</strong> has expired and is no longer accepting new responses.</p><p><a href="${this.getWebUrl()}/dashboard/forms/${form.id}">Open form settings</a></p>`,
-    });
+    const value = answers[emailField.fieldKey];
+    if (typeof value !== "string") return undefined;
+
+    const normalized = value.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) return undefined;
+
+    return normalized;
   }
 
   private makeSlugBase(title: string) {
@@ -125,9 +127,6 @@ export class FormService {
   private normalizeUnexpectedDbError(error: unknown): never {
     const dbError = error as { code?: string; detail?: string; constraint?: string } | undefined;
     if (dbError?.code === "23505") {
-      if (dbError.constraint === "form_responses_form_ip_hash_unique") {
-        throw new ServiceError("FORBIDDEN", "You have already submitted this form.");
-      }
       throw new ServiceError("CONFLICT", "A unique constraint was violated", {
         detail: dbError.detail,
         constraint: dbError.constraint,
@@ -291,17 +290,6 @@ export class FormService {
       throw new ServiceError("FORBIDDEN", "Form is expired");
     }
 
-    const ipHash = requestMeta?.ip ? this.hashSubject(requestMeta.ip) : this.hashSubject("unknown");
-    const [existingResponseFromIp] = await db
-      .select({ id: formResponsesTable.id })
-      .from(formResponsesTable)
-      .where(and(eq(formResponsesTable.formId, form.id), eq(formResponsesTable.ipHash, ipHash)))
-      .limit(1);
-
-    if (existingResponseFromIp) {
-      throw new ServiceError("FORBIDDEN", "You have already submitted this form.");
-    }
-
     const fields = await db
       .select()
       .from(formFieldsTable)
@@ -423,15 +411,6 @@ export class FormService {
     }
 
     const ipHash = this.hashSubject(subject.ip ?? "unknown");
-    const [existingResponseFromIp] = await db
-      .select({ id: formResponsesTable.id })
-      .from(formResponsesTable)
-      .where(and(eq(formResponsesTable.formId, form.id), eq(formResponsesTable.ipHash, ipHash)))
-      .limit(1);
-
-    if (existingResponseFromIp) {
-      throw new ServiceError("FORBIDDEN", "You have already submitted this form.");
-    }
 
     const fields = await db
       .select()
@@ -481,48 +460,25 @@ export class FormService {
       throw new ServiceError("INTERNAL", "Failed to persist response");
     }
 
-    if (data.respondentEmail) {
+    const respondentEmail = this.pickRespondentEmail(
+      data.respondentEmail,
+      fields.map((field) => ({ fieldType: field.fieldType, fieldKey: field.fieldKey })),
+      data.answers as Record<string, unknown>,
+    );
+
+    if (respondentEmail) {
       try {
-        await this.sendRespondentConfirmationEmail(data.respondentEmail, form);
+        await this.sendRespondentConfirmationEmail(respondentEmail, form);
       } catch (error) {
         logger.error("Failed to send respondent confirmation email", {
           formId: form.id,
-          respondentEmail: data.respondentEmail,
+          respondentEmail,
           error,
         });
       }
     }
 
     return submissionResult;
-  }
-
-  async sendPendingExpiryNotifications() {
-    const expiredForms = await db
-      .select({
-        id: formsTable.id,
-        ownerId: formsTable.ownerId,
-        title: formsTable.title,
-        slug: formsTable.slug,
-        expiresAt: formsTable.expiresAt,
-      })
-      .from(formsTable)
-      .where(and(isNull(formsTable.expiryNotificationSentAt), lt(formsTable.expiresAt, new Date())));
-
-    for (const form of expiredForms) {
-      if (!form.expiresAt) continue;
-
-      try {
-        await this.sendCreatorFormExpiredEmail(form);
-        await db
-          .update(formsTable)
-          .set({ expiryNotificationSentAt: new Date() })
-          .where(eq(formsTable.id, form.id));
-      } catch (error) {
-        logger.error("Failed to send creator expiry email", { formId: form.id, error });
-      }
-    }
-
-    return expiredForms.length;
   }
 
   async getResponseAnalytics(ownerId: string, formId: string) {

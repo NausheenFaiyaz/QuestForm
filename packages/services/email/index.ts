@@ -9,8 +9,12 @@ type EmailPayload = {
 };
 
 export class EmailService {
+  private get fromAddress() {
+    return env.EMAIL_FROM || "QuestForm <onboarding@resend.dev>";
+  }
+
   private get isConfigured() {
-    return Boolean(env.RESEND_API_KEY && env.EMAIL_FROM);
+    return Boolean(env.RESEND_API_KEY);
   }
 
   async sendEmail(payload: EmailPayload) {
@@ -29,7 +33,7 @@ export class EmailService {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: env.EMAIL_FROM,
+        from: this.fromAddress,
         to: [payload.to],
         reply_to: env.EMAIL_REPLY_TO || undefined,
         subject: payload.subject,

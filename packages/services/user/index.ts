@@ -1,8 +1,8 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import * as JWT from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
-import { db, eq } from "@repo/database";
-import { usersTable } from "@repo/database/models/user";
+import { and, db, eq, gt, isNull } from "@repo/database";
+import { userRefreshSessionsTable, usersTable } from "@repo/database/models/user";
 import { env } from "../env";
 import {
   createUserWithEmailAndPasswordInput,
@@ -19,6 +19,36 @@ import {
 
 export class UserService {
   private googleClient = new OAuth2Client(env.GOOGLE_CLIENT_ID);
+  private accessTokenTtl = env.ACCESS_TOKEN_EXPIRES_IN || env.JWT_EXPIRES_IN;
+  private refreshTokenTtl = env.REFRESH_TOKEN_EXPIRES_IN;
+
+  private parseDurationToMs(duration: string) {
+    const match = /^(\d+)(ms|s|m|h|d)$/i.exec(duration.trim());
+    if (!match || !match[1] || !match[2]) throw new Error(`invalid duration format: ${duration}`);
+
+    const value = Number(match[1]);
+    const unit = match[2].toLowerCase();
+    const factor =
+      unit === "ms"
+        ? 1
+        : unit === "s"
+          ? 1000
+          : unit === "m"
+            ? 60 * 1000
+            : unit === "h"
+              ? 60 * 60 * 1000
+              : 24 * 60 * 60 * 1000;
+
+    return value * factor;
+  }
+
+  private getRefreshExpiryDate() {
+    return new Date(Date.now() + this.parseDurationToMs(this.refreshTokenTtl));
+  }
+
+  private hashToken(value: string) {
+    return createHmac("sha256", env.JWT_SECRET).update(value).digest("hex");
+  }
 
   private async getUserByEmail(email: string) {
     const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
@@ -37,15 +67,93 @@ export class UserService {
   async generateUserToken(payload: GenerateUserTokenPayloadType) {
     const { id } = await generateUserTokenPayload.parseAsync(payload);
     const token = JWT.sign({ id }, env.JWT_SECRET, {
-      expiresIn: env.JWT_EXPIRES_IN as JWT.SignOptions["expiresIn"],
+      expiresIn: this.accessTokenTtl as JWT.SignOptions["expiresIn"],
     });
     return { token };
   }
 
   async verifyUserToken(token: string) {
-    const decoded = JWT.verify(token, env.JWT_SECRET);
-    const parsed = generateUserTokenPayload.safeParse(decoded);
-    return parsed.success ? parsed.data : null;
+    try {
+      const decoded = JWT.verify(token, env.JWT_SECRET);
+      const parsed = generateUserTokenPayload.safeParse(decoded);
+      return parsed.success ? parsed.data : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async createSessionForUser(
+    userId: string,
+    metadata?: {
+      ipHash?: string | null;
+      userAgent?: string | null;
+    },
+  ) {
+    const refreshToken = randomBytes(48).toString("hex");
+    const tokenHash = this.hashToken(refreshToken);
+    const expiresAt = this.getRefreshExpiryDate();
+
+    await db.insert(userRefreshSessionsTable).values({
+      userId,
+      tokenHash,
+      expiresAt,
+      ipHash: metadata?.ipHash ?? null,
+      userAgent: metadata?.userAgent ?? null,
+    });
+
+    const { token: accessToken } = await this.generateUserToken({ id: userId });
+
+    return { accessToken, refreshToken };
+  }
+
+  async rotateRefreshSession(
+    refreshToken: string,
+    metadata?: {
+      ipHash?: string | null;
+      userAgent?: string | null;
+    },
+  ) {
+    const tokenHash = this.hashToken(refreshToken);
+    const [existingSession] = await db
+      .select()
+      .from(userRefreshSessionsTable)
+      .where(
+        and(
+          eq(userRefreshSessionsTable.tokenHash, tokenHash),
+          isNull(userRefreshSessionsTable.revokedAt),
+          gt(userRefreshSessionsTable.expiresAt, new Date()),
+        ),
+      )
+      .limit(1);
+
+    if (!existingSession) return null;
+
+    await db
+      .update(userRefreshSessionsTable)
+      .set({ revokedAt: new Date() })
+      .where(eq(userRefreshSessionsTable.id, existingSession.id));
+
+    const next = await this.createSessionForUser(existingSession.userId, metadata);
+
+    return {
+      userId: existingSession.userId,
+      ...next,
+    };
+  }
+
+  async revokeRefreshSession(refreshToken: string) {
+    const tokenHash = this.hashToken(refreshToken);
+    await db
+      .update(userRefreshSessionsTable)
+      .set({ revokedAt: new Date() })
+      .where(eq(userRefreshSessionsTable.tokenHash, tokenHash));
+  }
+
+  async revokeAllUserRefreshSessions(userId: string) {
+    await db
+      .update(userRefreshSessionsTable)
+      .set({ revokedAt: new Date() })
+      .where(and(eq(userRefreshSessionsTable.userId, userId), isNull(userRefreshSessionsTable.revokedAt)));
   }
 
   async getUserById(userId: string) {
@@ -69,8 +177,7 @@ export class UserService {
 
     if (!insertedUser?.id) throw new Error("something went wrong while creating a user");
 
-    const { token } = await this.generateUserToken({ id: insertedUser.id });
-    return { id: insertedUser.id, token };
+    return { id: insertedUser.id };
   }
 
   async signInUserWithEmailAndPassword(payload: SignInUserWithEmailAndPasswordInputType) {
@@ -85,8 +192,7 @@ export class UserService {
 
     if (!isValid) throw new Error("invalid email or password");
 
-    const { token } = await this.generateUserToken({ id: existingUser.id });
-    return { id: existingUser.id, token };
+    return { id: existingUser.id };
   }
 
   async signInWithGoogle(payload: SignInWithGoogleInputType) {
@@ -143,8 +249,7 @@ export class UserService {
       throw new Error("something went wrong while signing in with google");
     }
 
-    const { token } = await this.generateUserToken({ id: user.id });
-    return { id: user.id, token };
+    return { id: user.id };
   }
 
   async updateUserProfile(userId: string, payload: UpdateUserProfileInputType) {
