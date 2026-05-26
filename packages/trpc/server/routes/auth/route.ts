@@ -5,6 +5,7 @@ import {
   createUserWithEmailAndPasswordInputModel,
   createUserWithEmailAndPasswordOutputModel,
   signOutOutputModel,
+  signInWithGoogleInputModel,
   signInWithEmailAndPasswordInputModel,
   updateMeInputModel,
 } from "./model";
@@ -55,6 +56,21 @@ export const authRouter = router({
       setAuthenticationCookie(ctx, token);
       return { id };
     }),
+  signInWithGoogle: publicProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: getPath("/signInWithGoogle"),
+        tags: TAGS,
+      },
+    })
+    .input(signInWithGoogleInputModel)
+    .output(createUserWithEmailAndPasswordOutputModel)
+    .mutation(async ({ input, ctx }) => {
+      const { id, token } = await userService.signInWithGoogle(input);
+      setAuthenticationCookie(ctx, token);
+      return { id };
+    }),
   signOut: protectedProcedure
     .meta({
       openapi: {
@@ -85,7 +101,12 @@ export const authRouter = router({
         id: user.id,
         email: user.email,
         fullName: user.fullName,
+        username: user.username,
         profileImageUrl: user.profileImageUrl,
+        bio: user.bio,
+        websiteUrl: user.websiteUrl,
+        socialLinks: user.socialLinks,
+        createdAt: user.createdAt?.toISOString() ?? null,
       };
     }),
   updateMe: protectedProcedure
@@ -104,7 +125,12 @@ export const authRouter = router({
         id: updated.id,
         email: updated.email,
         fullName: updated.fullName,
+        username: updated.username,
         profileImageUrl: updated.profileImageUrl,
+        bio: updated.bio,
+        websiteUrl: updated.websiteUrl,
+        socialLinks: updated.socialLinks,
+        createdAt: updated.createdAt?.toISOString() ?? null,
       };
     }),
 });
