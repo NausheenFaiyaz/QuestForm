@@ -10,6 +10,7 @@ const sidebarLinks = [
   { href: "/explore", label: "Explore", match: (pathname: string) => pathname.startsWith("/explore") },
   { href: "/dashboard", label: "Dashboard", match: (pathname: string) => pathname.startsWith("/dashboard") },
   { href: "/pricing", label: "Pricing", match: (pathname: string) => pathname.startsWith("/pricing") },
+  { href: "http://localhost:8000/docs", label: "Docs", external: true, match: () => false },
 ];
 
 export function AppSidebar() {
@@ -45,18 +46,33 @@ export function AppSidebar() {
         <nav className="mt-8 space-y-3">
           {sidebarLinks.map((item) => {
             const isActive = item.match(pathname);
+            const isExternal = "external" in item && item.external;
 
             return (
-              <Link
-                key={item.label}
-                href={item.href}
-                className={[
-                  "flex items-center px-4 py-3 font-pixel text-xl uppercase ",
-                  isActive ? "bg-[#ffd84e] text-black shadow-[4px_4px_0_#000] rounded-[1.25rem] border-[3px] border-black" : "bg-transparent text-white",
-                ].join(" ")}
-              >
-                <span>{item.label}</span>
-              </Link>
+              isExternal ? (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center bg-transparent px-4 py-3 font-pixel text-xl uppercase text-white [text-shadow:1px_1px_0_#000]"
+                >
+                  <span>{item.label}</span>
+                </a>
+              ) : (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className={[
+                    "flex items-center px-4 py-3 font-pixel text-xl uppercase",
+                    isActive
+                      ? "rounded-[1.25rem] border-[3px] border-black bg-[#ffd84e] text-black shadow-[4px_4px_0_#000] [text-shadow:1px_1px_0_#000]"
+                      : "bg-transparent text-white [text-shadow:1px_1px_0_#000]",
+                  ].join(" ")}
+                >
+                  <span>{item.label}</span>
+                </Link>
+              )
             );
           })}
         </nav>

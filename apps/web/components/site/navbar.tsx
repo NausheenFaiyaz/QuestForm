@@ -14,6 +14,7 @@ const publicLinks = [
   { href: "/explore", label: "Explore" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/pricing", label: "Pricing" },
+  { href: "http://localhost:8000/docs", label: "Docs", external: true },
 ];
 
 const authedLinks = [{ href: "/profile", label: "Profile" }];
@@ -51,6 +52,7 @@ export function SiteNavbar() {
         <nav className="hidden items-center gap-8 lg:flex">
           {navLinks.map((link) => {
             const isProfile = link.href === "/profile";
+            const isExternal = "external" in link && link.external;
 
             if (isProfile) {
               return (
@@ -66,6 +68,20 @@ export function SiteNavbar() {
                 >
                   {userInitial}
                 </Link>
+              );
+            }
+
+            if (isExternal) {
+              return (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="comic-nav-link text-lg xl:text-xl"
+                >
+                  {link.label}
+                </a>
               );
             }
 
@@ -136,16 +152,28 @@ export function SiteNavbar() {
             <nav className="flex flex-col gap-4 px-5 py-6">
               {navLinks.map((link) => (
                 <SheetClose asChild key={link.href}>
-                  <Link
-                    href={link.href}
-                    className={cn(
-                      "flex items-center justify-between rounded-[1.4rem] border-[3px] border-black bg-white px-5 py-4 font-pixel text-xl uppercase text-black shadow-[4px_4px_0_#000]",
-                      pathname === link.href && "bg-[#ffe04c]",
-                    )}
-                  >
-                    <span>{link.label}</span>
-                    <ChevronRight className="size-5" aria-hidden="true" />
-                  </Link>
+                  {"external" in link && link.external ? (
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center justify-between rounded-[1.4rem] border-[3px] border-black bg-white px-5 py-4 font-pixel text-xl uppercase text-black shadow-[4px_4px_0_#000]"
+                    >
+                      <span>{link.label}</span>
+                      <ChevronRight className="size-5" aria-hidden="true" />
+                    </a>
+                  ) : (
+                    <Link
+                      href={link.href}
+                      className={cn(
+                        "flex items-center justify-between rounded-[1.4rem] border-[3px] border-black bg-white px-5 py-4 font-pixel text-xl uppercase text-black shadow-[4px_4px_0_#000]",
+                        pathname === link.href && "bg-[#ffe04c]",
+                      )}
+                    >
+                      <span>{link.label}</span>
+                      <ChevronRight className="size-5" aria-hidden="true" />
+                    </Link>
+                  )}
                 </SheetClose>
               ))}
 
