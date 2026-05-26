@@ -45,8 +45,6 @@ h6,
 }
 
 .pixel-landing {
-  background-image: url("./assets/LandingPage_Grass.webp"), url("./assets/LandingPage_Hills.webp"),
-    url("./assets/LandingPage_Mountain.webp"), url("./assets/LandingPage_Sky.webp");
   background-color: #d5edff;
   background-position:
     bottom center,

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { AppSidebar } from "~/components/site/app-sidebar";
 import { FormEditor } from "~/components/site/form-editor";
 import { useCreateForm } from "~/hooks/api/forms";
+import { DEFAULT_FORM_THEME_KEY } from "~/lib/form-themes";
 
 export default function NewFormPage() {
   const router = useRouter();
@@ -18,7 +19,7 @@ export default function NewFormPage() {
             initialValue={{
               title: "Untitled Form",
               slug: "",
-              themeKey: "startup-clean",
+              themeKey: DEFAULT_FORM_THEME_KEY,
               visibility: "public",
               description: "",
               expiresAt: "",

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Mail, Star } from "lucide-react";
 import { usePublicFormBySlug, useSubmitForm } from "~/hooks/api/forms";
+import { getThemeByKey } from "~/lib/form-themes";
 
 const META_PREFIX = "__CFMETA__";
 
@@ -63,6 +64,7 @@ export default function PublicFormPage() {
 
   const parsedMeta = useMemo(() => parseMeta(detail.data?.description ?? ""), [detail.data?.description]);
   const fields = useMemo(() => detail.data?.fields ?? [], [detail.data?.fields]);
+  const selectedTheme = useMemo(() => getThemeByKey(detail.data?.themeKey), [detail.data?.themeKey]);
 
   const slides = useMemo(() => {
     const data: Array<
@@ -152,7 +154,12 @@ export default function PublicFormPage() {
           </div>
 
           <div className="p-5 sm:p-8">
-            <div className="h-[min(62vh,560px)] rounded-[1.7rem] border-[3px] border-black bg-[#fffdf7] p-6 shadow-[4px_4px_0_#000]">
+            <div
+              className="h-[min(62vh,560px)] rounded-[1.7rem] border-[3px] border-black bg-[#fffdf7] bg-cover bg-center p-6 shadow-[4px_4px_0_#000]"
+              style={{
+                backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.40), rgba(255, 255, 255, 0.40)), url(${selectedTheme.backgroundImage})`,
+              }}
+            >
               <div className="h-full overflow-y-auto pr-1">
               {currentSlide?.kind === "welcome" ? (
                 <div className="min-h-full">

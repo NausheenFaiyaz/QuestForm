@@ -21,6 +21,7 @@ import {
   X,
 } from "lucide-react";
 import crack from "~/app/assets/comic assets/crack.png";
+import { FORM_THEME_OPTIONS, getThemeByKey } from "~/lib/form-themes";
 
 type FieldType =
   | "short_text"
@@ -317,6 +318,7 @@ export function FormEditor({
   const [customFieldTemplateKey, setCustomFieldTemplateKey] = useState(customFieldTemplates[0]!.key);
   const [customFieldLabel, setCustomFieldLabel] = useState("");
   const [customFieldPlaceholder, setCustomFieldPlaceholder] = useState("");
+  const selectedTheme = getThemeByKey(value.themeKey);
 
   const contentBlocks = useMemo<ContentBlock[]>(() => {
     const blocks: ContentBlock[] = [];
@@ -794,11 +796,17 @@ export function FormEditor({
                 </div>
                 <div>
                   <label className="mb-2 block font-pixel text-lg uppercase text-[#d92834]">Theme Key</label>
-                  <input
+                  <select
                     className={shellInputClassName()}
                     value={value.themeKey}
                     onChange={(event) => setValue((prev) => ({ ...prev, themeKey: event.target.value }))}
-                  />
+                  >
+                    {FORM_THEME_OPTIONS.map((theme) => (
+                      <option key={theme.key} value={theme.key}>
+                        {theme.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="mb-2 block font-pixel text-lg uppercase text-[#d92834]">Expiry Date & Time</label>
@@ -1045,7 +1053,12 @@ export function FormEditor({
             </div>
 
             <div className="flex-1 overflow-y-auto">
-              <div className="h-full min-h-72 rounded-[1.7rem] border-[3px] border-black bg-white p-6 shadow-[5px_5px_0_#000]">
+              <div
+                className="h-full min-h-72 rounded-[1.7rem] border-[3px] border-black bg-white bg-cover bg-center p-6 shadow-[5px_5px_0_#000]"
+                style={{
+                  backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.40), rgba(255, 255, 255, 0.40)), url(${selectedTheme.backgroundImage})`,
+                }}
+              >
               {(() => {
                 const block = contentBlocks[previewIndex];
                 if (!block) {
