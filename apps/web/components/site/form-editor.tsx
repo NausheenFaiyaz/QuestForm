@@ -957,7 +957,7 @@ export function FormEditor({
                             <p className="font-pixel text-lg uppercase text-[#16110d]">Options</p>
                             <div className="mt-3 space-y-2">
                               {getOptions(field).map((option, idx) => (
-                                <div key={`${option}-${idx}`} className="flex gap-2">
+                                <div key={idx} className="flex gap-2">
                                   <input
                                     className={shellInputClassName()}
                                     value={option}

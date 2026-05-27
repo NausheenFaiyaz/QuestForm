@@ -489,7 +489,7 @@ export default function FormResponsesPage() {
       </div>
 
       <Dialog open={Boolean(selectedResponse)} onOpenChange={(open) => !open && setSelectedResponseId(null)}>
-        <DialogContent className="max-w-4xl rounded-[1.7rem] border-[3px] border-black bg-[#fffaf0] p-0 shadow-[8px_8px_0_#000]">
+        <DialogContent className="max-h-[92vh] !max-w-[96vw] lg:!max-w-[1100px] xl:!max-w-[1280px] overflow-y-auto rounded-[1.7rem] border-[3px] border-black bg-[#fffaf0] p-0 shadow-[8px_8px_0_#000]">
           {selectedResponse ? (
             <div>
               <div className="border-b-[3px] border-black px-6 py-5">
@@ -502,7 +502,7 @@ export default function FormResponsesPage() {
               </div>
 
               <div className="space-y-4 px-6 py-5">
-                <div className="grid gap-3 sm:grid-cols-3">
+                <div className="grid gap-3 md:grid-cols-3">
                   <div className="rounded-[1rem] border-[2px] border-black bg-white p-4 shadow-[3px_3px_0_#000]">
                     <p className="text-xs font-black uppercase tracking-[0.12em] text-[#8b7d68]">Respondent</p>
                     <p className="mt-2 font-semibold text-[#16110d]">{selectedResponse.respondentEmail ?? "Anonymous"}</p>
@@ -517,7 +517,7 @@ export default function FormResponsesPage() {
                   </div>
                 </div>
 
-                <div className="grid gap-3 md:grid-cols-2">
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                   {selectedResponse.items.map((item) => (
                     <div key={`${selectedResponse.id}-${item.fieldId}`} className="rounded-[1rem] border-[2px] border-black bg-white p-4 shadow-[3px_3px_0_#000]">
                       <p className="text-xs font-black uppercase tracking-[0.12em] text-[#8b7d68]">{item.fieldLabel}</p>

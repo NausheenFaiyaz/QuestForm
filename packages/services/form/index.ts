@@ -370,6 +370,16 @@ export class FormService {
         return value;
       }
       case "checkbox": {
+        const options = Array.isArray(cfg.options) ? cfg.options : [];
+        if (options.length > 0) {
+          if (!Array.isArray(value) || value.some((item) => typeof item !== "string")) {
+            throw new Error(`${field.fieldKey} must be a list of string options`);
+          }
+          if (value.some((item) => !options.includes(item))) {
+            throw new Error(`${field.fieldKey} has invalid option`);
+          }
+          return value;
+        }
         if (typeof value !== "boolean") throw new Error(`${field.fieldKey} must be boolean`);
         return value;
       }

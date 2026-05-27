@@ -1,11 +1,20 @@
 # QuestForm
 
-QuestForm is a Typeform-style SaaS for creating, publishing, and analyzing forms with a comic-themed UI.
+QuestForm is a full-stack, Typeform-style SaaS platform for creating, publishing, and analyzing interactive forms. It includes a visual form builder, secure authentication, public shareable form links, response analytics, CSV export, and a comic-inspired themed experience for both creators and respondents.
 
 - Live app: `https://quest-form-web.vercel.app/`
+- API docs (hosted): `https://questform.onrender.com/docs`
 - Frontend hosting: Vercel
 - Backend hosting: Render
 - Database: Neon (PostgreSQL)
+
+## Demo Credentials
+
+Use these credentials for evaluation testing:
+
+- Demo URL: `https://quest-form-web.vercel.app/signin`
+- Demo email: `codexninjadev@gmail.com`
+- Demo password: `codeXninja`
 
 ## Tech Stack
 
@@ -26,10 +35,12 @@ QuestForm is a Typeform-style SaaS for creating, publishing, and analyzing forms
   - Create/update/publish/unpublish/archive/clone/delete forms
   - Multiple field types: short/long text, email, number, single select, multi select, checkbox, rating, date
   - Welcome and end screens in flow metadata
+  - Theme selection for forms (Comic Spiderman, Comic Town, Comic Green Cloud) with a default theme fallback
 - Public form experience
   - Shareable form by slug
   - Submit responses with validation
   - Optional respondent email capture
+  - Selected form theme is applied to the live public form page background
 - Analytics and responses
   - Owner dashboard analytics
   - Per-form analytics and paginated response listing
@@ -195,15 +206,6 @@ At repo root:
 - `pnpm db:migrate` apply Drizzle migrations
 - `pnpm format` format TS/TSX/MD files
 
-## Demo Credentials
-
-No hardcoded demo account is shipped in this repository.
-
-Use this section after creating one from `/signup`:
-
-- Demo URL: `https://quest-form-web.vercel.app/signin`
-- Demo email: `<add-your-demo-email>`
-- Demo password: `<add-your-demo-password>`
 
 ## Deployment Notes
 
